@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BRU Compressores — Controle de Compras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .topbar-top { flex-direction: row-reverse; }
+    .topbar-title { flex: 1; text-align: left; }
+    #topbar-actions { display: flex; gap: 8px; flex-direction: row-reverse; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">BRU Compressores<span>Controle de Compras — Peças &amp; O.S.</span></div>
+    <div class="login-accent"></div>
+    <h2>Entrar no sistema</h2>
+    <div id="login-alert"></div>
+    <div class="form-group mb-12">
+      <label class="form-label">E-mail</label>
+      <input type="email" id="login-email" class="form-input" placeholder="seu@email.com" value="admin@empresa.com">
+    </div>
+    <div class="form-group mb-20">
+      <label class="form-label">Senha</label>
+      <input type="password" id="login-senha" class="form-input" placeholder="••••••••" value="admin123">
+    </div>
+    <button class="btn btn-primary w-full" style="justify-content:center" onclick="App.login()">Entrar</button>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">BRU Compressores</div>
+      <div class="sidebar-logo-sub">Controle de Compras</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <button class="nav-item active" onclick="App.navigate('dashboard')" data-page="dashboard">
+        <span class="nav-icon ic-dash">⊞</span>Dashboard
+      </button>
+      <button class="nav-item" onclick="App.navigate('ordens')" data-page="ordens">
+        <span class="nav-icon ic-os">📋</span>O.S. / Pedidos de Peças
+      </button>
+      <button class="nav-item" onclick="App.navigate('kanban')" data-page="kanban">
+        <span class="nav-icon" style="background:linear-gradient(135deg,#f97316,#ea580c)">⊟</span>Kanban
+      </button>
+      <button class="nav-item" onclick="App.navigate('rastreamento')" data-page="rastreamento">
+        <span class="nav-icon ic-rast">🕐</span>Rastreamento de Peças
+      </button>
+      <div class="nav-section">Cadastros</div>
+      <button class="nav-item" onclick="App.navigate('fornecedores')" data-page="fornecedores">
+        <span class="nav-icon ic-forn">🏠</span>Fornecedores
+      </button>
+      <div class="nav-section" id="nav-admin-section">Sistema</div>
+      <button class="nav-item" onclick="App.navigate('relatorios')" data-page="relatorios">
+        <span class="nav-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">📈</span>Relatórios
+      </button>
+      <button class="nav-item nav-admin" onclick="App.navigate('importar')" data-page="importar">
+        <span class="nav-icon ic-imp">⬆</span>Importar
+      </button>
+      <button class="nav-item nav-admin" onclick="App.navigate('backup')" data-page="backup">
+        <span class="nav-icon" style="background:linear-gradient(135deg,#0ea5e9,#0369a1)">💾</span>Backup
+      </button>
+      <button class="nav-item nav-admin" onclick="App.navigate('configuracoes')" data-page="configuracoes">
+        <span class="nav-icon" style="background:linear-gradient(135deg,#64748b,#475569)">⚙</span>Configurações
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-avatar" id="sidebar-avatar">A</div>
+      <div class="sidebar-user">
+        <strong id="sidebar-user-nome">-</strong>
+        <span id="sidebar-user-papel">-</span>
+      </div>
+    </div>
+    <div style="padding:0 18px 14px">
+      <button class="btn-logout" onclick="App.logout()">Sair do sistema</button>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div class="status-bar"></div>
+    <header id="topbar">
+      <div class="topbar-top">
+        <button class="btn-icon" id="menu-toggle" onclick="App.toggleSidebar()" style="display:none">☰</button>
+        <span class="topbar-title" id="topbar-title">Dashboard</span>
+        <div class="topbar-actions" id="topbar-actions"></div>
+      </div>
+      <div class="topbar-breadcrumb" id="topbar-bread">BRU Compressores / Dashboard</div>
+    </header>
+    <div id="content"></div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/pages/dashboard.js"></script>
+<script src="/assets/js/pages/ordens.js"></script>
+<script src="/assets/js/pages/detalhe-os.js"></script>
+<script src="/assets/js/pages/rastreamento.js"></script>
+<script src="/assets/js/pages/configuracoes.js"></script>
+<script src="/assets/js/pages/backup.js"></script>
+<script src="/assets/js/pages/relatorios.js"></script>
+<script src="/assets/js/pages/kanban.js"></script>
+<script src="/assets/js/pages/importar2.js"></script>
+<script src="/assets/js/app.js"></script>
+</body>
+</html>
