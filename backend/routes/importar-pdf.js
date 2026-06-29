@@ -149,7 +149,7 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
       ].filter(Boolean).join(' \u2014 ') || 'Equipamento nao identificado';
 
       let osId;
-      const osExistente = db.prepare('SELECT id FROM ordens_servico WHERE numero_os = ?').get(dados.numero_os);
+      const osExistente = await Promise.resolve(db.prepare('SELECT id FROM ordens_servico WHERE numero_os = ?').get(dados.numero_os));
 
       if (osExistente) {
         osId = osExistente.id;
@@ -158,7 +158,7 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
           "INSERT INTO ordens_servico (numero_os, cliente, equipamento, data_abertura, data_conclusao_estimada, status, prioridade, criado_por) VALUES (?, ?, ?, ?, ?, 'Aberta', ?, ?)"
         ).run(dados.numero_os, dados.cliente, equipamento, dados.data_abertura, dados.data_conclusao || null, dados.prioridade, req.usuario.id);
         // Busca o ID real pelo numero_os (evita problema de lastInsertRowid no sql.js)
-        osId = db.prepare('SELECT id FROM ordens_servico WHERE numero_os = ?').get(dados.numero_os).id;
+        osId = await Promise.resolve(db.prepare('SELECT id FROM ordens_servico WHERE numero_os = ?').get(dados.numero_os)).id;
         db.prepare('INSERT INTO historico_status (os_id, status_anterior, status_novo, observacao, usuario_id) VALUES (?, ?, ?, ?, ?)')
           .run(osId, null, 'Aberta', 'Importado via PDF: ' + nome, req.usuario.id);
       }
