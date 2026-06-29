@@ -1,10 +1,6 @@
 /**
- * database.js — Abstração do banco de dados
- * Local: SQLite via sql.js
- * Produção: PostgreSQL via Supabase
- * 
- * Interface unificada: todas as rotas usam db.prepare(sql).run/get/all
- * Em produção, essas chamadas são síncronas via deasync
+ * database.js — SQLite local + PostgreSQL produção
+ * Abordagem: worker thread síncrono para PostgreSQL
  */
 
 const isProd = !!process.env.DATABASE_URL;
@@ -12,27 +8,14 @@ let _db = null;
 
 // ── SQLITE LOCAL ──────────────────────────────────────────────────────────
 async function initSQLite() {
-  const path      = require('path');
-  const fs        = require('fs');
+  const path = require('path'), fs = require('fs');
   const initSqlJs = require('sql.js');
-
   const dataDir = path.join(__dirname, '..', '..', 'data');
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   const dbPath = path.join(dataDir, 'compras.db');
-
   const SQL = await initSqlJs();
-  let db;
-  if (fs.existsSync(dbPath)) {
-    db = new SQL.Database(fs.readFileSync(dbPath));
-  } else {
-    db = new SQL.Database();
-  }
-
-  const save = () => {
-    try { fs.writeFileSync(dbPath, Buffer.from(db.export())); } catch(e) {}
-  };
-
-  // Criar tabelas
+  const db = fs.existsSync(dbPath) ? new SQL.Database(fs.readFileSync(dbPath)) : new SQL.Database();
+  const save = () => { try { fs.writeFileSync(dbPath, Buffer.from(db.export())); } catch(e) {} };
   const tabelas = [
     `CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT NOT NULL UNIQUE, senha_hash TEXT NOT NULL, papel TEXT NOT NULL DEFAULT 'operador', ativo INTEGER NOT NULL DEFAULT 1, criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')))`,
     `CREATE TABLE IF NOT EXISTS ordens_servico (id INTEGER PRIMARY KEY AUTOINCREMENT, numero_os TEXT NOT NULL UNIQUE, cliente TEXT NOT NULL, equipamento TEXT NOT NULL, data_abertura TEXT NOT NULL, data_conclusao_estimada TEXT, status TEXT NOT NULL DEFAULT 'Aberta', prioridade TEXT NOT NULL DEFAULT 'Média', tipo TEXT NOT NULL DEFAULT 'OS', transporte TEXT, transporte_obs TEXT, observacoes TEXT, criado_por INTEGER, criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')), atualizado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')))`,
@@ -44,7 +27,6 @@ async function initSQLite() {
   ];
   tabelas.forEach(sql => { try { db.run(sql); } catch(e) {} });
   save();
-
   return {
     _tipo: 'sqlite',
     prepare(sql) {
@@ -59,77 +41,100 @@ async function initSQLite() {
 }
 
 // ── POSTGRESQL PRODUÇÃO ───────────────────────────────────────────────────
-// Usa pg com execução síncrona via Atomics/SharedArrayBuffer trick
-// Abordagem: executa queries de forma síncrona bloqueando com worker threads
-
+// Usa Atomics + SharedArrayBuffer + worker_threads para chamadas síncronas
 function initPostgres() {
-  const { Pool } = require('pg');
-  const { execSync } = require('child_process');
-  
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-    max: 10
-  });
+  const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+  const os = require('os');
+  const path = require('path');
+  const fs = require('fs');
 
-  // Converte ? para $1, $2...
-  const convertPlaceholders = (sql) => {
+  // Script do worker inline (salvo em arquivo temp)
+  const workerScript = `
+const { parentPort, workerData } = require('worker_threads');
+const { Client } = require('pg');
+
+async function run() {
+  const { sql, params, connStr } = workerData;
+  const client = new Client({ connectionString: connStr, ssl: { rejectUnauthorized: false } });
+  try {
+    await client.connect();
+    const result = await client.query(sql, params);
+    parentPort.postMessage({ rows: result.rows, rowCount: result.rowCount });
+  } catch(e) {
+    parentPort.postMessage({ error: e.message });
+  } finally {
+    await client.end();
+  }
+}
+run();
+`;
+
+  const workerFile = path.join(os.tmpdir(), 'pg-worker.js');
+  fs.writeFileSync(workerFile, workerScript);
+
+  const connStr = process.env.DATABASE_URL;
+
+  // Executa query de forma síncrona via Atomics
+  const querySync = (sql, params = []) => {
+    // Converte ? para $1, $2...
     let i = 0;
-    return sql.replace(/\?/g, () => '$' + (++i));
+    const pgSql = sql.replace(/\?/g, () => '$' + (++i));
+
+    const sharedBuffer = new SharedArrayBuffer(4);
+    const flag = new Int32Array(sharedBuffer);
+    let result = null;
+
+    const worker = new Worker(workerFile, {
+      workerData: { sql: pgSql, params, connStr }
+    });
+
+    worker.on('message', (msg) => {
+      result = msg;
+      Atomics.store(flag, 0, 1);
+      Atomics.notify(flag, 0);
+    });
+
+    worker.on('error', (e) => {
+      result = { error: e.message };
+      Atomics.store(flag, 0, 1);
+      Atomics.notify(flag, 0);
+    });
+
+    // Aguarda resultado (máx 15 segundos)
+    Atomics.wait(flag, 0, 0, 15000);
+
+    if (!result) throw new Error('PostgreSQL timeout');
+    if (result.error) throw new Error(result.error);
+    return result;
   };
 
-  // Executa query de forma SÍNCRONA usando script filho
-  const querySync = (sql, params = []) => {
-    const pgSql = convertPlaceholders(sql);
-    const input = JSON.stringify({ sql: pgSql, params, connStr: process.env.DATABASE_URL });
-    
-    try {
-      const result = execSync(
-        `node -e "
-const {Client}=require('pg');
-const input=${JSON.stringify(input)};
-const {sql,params,connStr}=JSON.parse(input);
-const c=new Client({connectionString:connStr,ssl:{rejectUnauthorized:false}});
-c.connect().then(()=>c.query(sql,params)).then(r=>{ process.stdout.write(JSON.stringify({rows:r.rows,rowCount:r.rowCount})); c.end(); }).catch(e=>{ process.stdout.write(JSON.stringify({error:e.message})); c.end(); });
-"`,
-        { timeout: 10000, maxBuffer: 10 * 1024 * 1024 }
-      );
-      const parsed = JSON.parse(result.toString());
-      if (parsed.error) throw new Error(parsed.error);
-      return parsed;
-    } catch(e) {
-      if (e.stdout) {
-        const out = JSON.parse(e.stdout.toString());
-        if (out.error) throw new Error(out.error);
-        return out;
-      }
-      throw e;
+  const addReturning = (sql) => {
+    const upper = sql.trim().toUpperCase();
+    if (upper.startsWith('INSERT') && !upper.includes('RETURNING')) {
+      return sql.trim() + ' RETURNING id';
     }
+    return sql;
   };
 
   return {
     _tipo: 'postgres',
-    _pool: pool,
     prepare(sql) {
       return {
         run(...params) {
-          const pgSql = convertPlaceholders(sql) + (sql.toUpperCase().includes('INSERT') ? ' RETURNING id' : '');
-          const r = querySync(pgSql, params);
+          const r = querySync(addReturning(sql), params);
           return { changes: r.rowCount, lastInsertRowid: r.rows[0]?.id || null };
         },
         get(...params) {
-          const r = querySync(convertPlaceholders(sql), params);
+          const r = querySync(sql, params);
           return r.rows[0];
         },
         all(...params) {
-          const r = querySync(convertPlaceholders(sql), params);
+          const r = querySync(sql, params);
           return r.rows;
         }
       };
     },
-    exec(sql) {
-      querySync(sql, []);
-    }
+    exec(sql) { querySync(sql, []); }
   };
 }
 
