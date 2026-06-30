@@ -16,7 +16,7 @@ const PageDashboard = {
       const mkLaranja = parseFloat(cfg.markup_laranja || 2.0);
 
       const statusMap = { 'Aberta':0,'Aguardando peças':0,'Peças separadas':0,'Concluída':0 };
-      d.por_status.forEach(s => statusMap[s.status] = s.total);
+      d.por_status.forEach(s => statusMap[s.status] = parseInt(s.total) || 0);
       const totalOS = Object.values(statusMap).reduce((a,b) => a+b, 0);
 
       const mkMedio = d.markup_medio || null;

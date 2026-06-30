@@ -20,7 +20,8 @@ router.get('/', async (req, res) => {
     const wc = where.length ? 'WHERE ' + where.join(' AND ') : '';
     const offset = (parseInt(pagina)-1) * parseInt(limite);
     const total = (await q(db, `SELECT COUNT(*) as total FROM ordens_servico o ${wc}`, ...params)).total;
-    const registros = await qa(db, `SELECT o.*, (SELECT COUNT(*) FROM pecas_os p WHERE p.os_id = o.id) as total_pecas, (SELECT COUNT(*) FROM pecas_os p WHERE p.os_id = o.id AND p.status_entrega = 'Entregue') as pecas_entregues FROM ordens_servico o ${wc} ORDER BY CASE o.prioridade WHEN 'Alta' THEN 1 WHEN 'Média' THEN 2 ELSE 3 END, o.data_abertura DESC LIMIT ? OFFSET ?`, ...params, parseInt(limite), offset);
+    const registrosRaw = await qa(db, `SELECT o.*, (SELECT COUNT(*) FROM pecas_os p WHERE p.os_id = o.id) as total_pecas, (SELECT COUNT(*) FROM pecas_os p WHERE p.os_id = o.id AND p.status_entrega = 'Entregue') as pecas_entregues FROM ordens_servico o ${wc} ORDER BY CASE o.prioridade WHEN 'Alta' THEN 1 WHEN 'Média' THEN 2 ELSE 3 END, o.data_abertura DESC LIMIT ? OFFSET ?`, ...params, parseInt(limite), offset);
+    const registros = registrosRaw.map(r => ({ ...r, total_pecas: parseInt(r.total_pecas)||0, pecas_entregues: parseInt(r.pecas_entregues)||0 }));
     res.json({ total, pagina: parseInt(pagina), limite: parseInt(limite), registros });
   } catch(e) { res.status(500).json({ erro: e.message }); }
 });

@@ -24,13 +24,16 @@ router.get('/dashboard', async (req, res) => {
     ]);
 
     res.json({
-      por_status, por_prioridade,
-      valor_total_aberto: val?.total || 0,
-      os_atrasadas: atrasadas?.total || 0,
-      em_transito: transito?.total || 0,
-      entregas_pendentes: pendentes?.total || 0,
+      por_status: por_status.map(s => ({ status: s.status, total: parseInt(s.total)||0 })),
+      por_prioridade: por_prioridade.map(s => ({ prioridade: s.prioridade, total: parseInt(s.total)||0 })),
+      valor_total_aberto: parseFloat(val?.total) || 0,
+      os_atrasadas: parseInt(atrasadas?.total) || 0,
+      em_transito: parseInt(transito?.total) || 0,
+      entregas_pendentes: parseInt(pendentes?.total) || 0,
       markup_medio: mk?.mk ? parseFloat(parseFloat(mk.mk).toFixed(2)) : null,
-      recentes, pecas_atrasadas, os_vencendo
+      recentes: recentes.map(r => ({ ...r, total_pecas: parseInt(r.total_pecas)||0, pecas_entregues: parseInt(r.pecas_entregues)||0 })),
+      pecas_atrasadas: pecas_atrasadas.map(p => ({ ...p, dias_atraso: parseInt(p.dias_atraso)||0 })),
+      os_vencendo: os_vencendo.map(o => ({ ...o, dias_restantes: parseInt(o.dias_restantes)||0 }))
     });
   } catch(e) { console.error('Dashboard error:', e.message); res.status(500).json({ erro: e.message }); }
 });
