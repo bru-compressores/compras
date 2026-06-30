@@ -80,8 +80,8 @@ function extrairOSPrimam(text) {
 
   // Pecas — abordagem stateful linha a linha (igual pdfExtractor comercial)
   const numRe   = '\\d+(?:\\.\\d{3})*,\\d{2}';
-  const RE_VAL  = new RegExp('^(UN|LT|KG|PC|CX|MT|GL|M2|M3|PAR|JG|SC)(' + numRe + ')(' + numRe + ')(' + numRe + ')\\d*$', 'i');
-  const RE_TUDO = new RegExp('^(\\d{3,6})(.+?)(UN|LT|KG|PC|CX|MT|GL)(' + numRe + ')(' + numRe + ')(' + numRe + ')\\d*$', 'i');
+  const RE_VAL  = new RegExp('^(UN|LT|L|KG|PC|CX|MT|GL|M2|M3|PAR|JG|SC)(' + numRe + ')(' + numRe + ')(' + numRe + ')\\d*$', 'i');
+  const RE_TUDO = new RegExp('^(\\d{3,6})(.+?)(UN|LT|L|KG|PC|CX|MT|GL)(' + numRe + ')(' + numRe + ')(' + numRe + ')\\d*$', 'i');
   const ANOS    = new Set(['2023','2024','2025','2026','2027','2028']);
 
   let emProdutos = false, codigoPendente = null, descricaoPendente = null;
