@@ -171,7 +171,7 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
       if (jaTem === 0) {
         for (const p of dados.pecas) {
           if (!p.descricao) continue;
-          await Promise.resolve(db.prepare("INSERT INTO pecas_os (os_id, codigo, descricao, quantidade, preco_unitario, status_entrega) VALUES (?, ?, ?, ?, ?, 'Pendente')")
+          await Promise.resolve(db.prepare("INSERT INTO pecas_os (os_id, codigo, descricao, quantidade, preco_unitario, status_entrega) VALUES (?, ?, ?, ?, ?, 'Aguardando Triagem')")
             .run(osId, p.codigo || null, p.descricao, p.quantidade || 1, p.preco_unitario || null));
           pecasImportadas++;
         }

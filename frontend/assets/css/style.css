@@ -305,3 +305,42 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after { content: ' ⇅'; }
 }
 .kanban-card.dragging { opacity: .4; }
 .kanban-col.drag-over { outline: 2px dashed var(--brand2); }
+
+/* ─── Badges de Triagem ──────────────────────────────────────────────────── */
+.badge-triagem { background: #fef3c7; color: #92400e; }
+.badge-separado-almox { background: #dcfce7; color: #166534; }
+
+/* ─── Triagem ────────────────────────────────────────────────────────────── */
+.triagem-os-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: box-shadow .15s, border-color .15s;
+}
+.triagem-os-card:hover {
+  border-color: var(--brand2);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.triagem-peca-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  margin-bottom: 6px;
+}
+.triagem-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: all .15s;
+}
+.triagem-btn.ativo-separado { background: #dcfce7; border-color: #16a34a; color: #166534; }
+.triagem-btn.ativo-comprar { background: #fee2e2; border-color: #dc2626; color: #991b1b; }

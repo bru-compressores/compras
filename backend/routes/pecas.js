@@ -11,7 +11,7 @@ const qr = (db, sql, ...p) => Promise.resolve(db.prepare(sql).run(...p));
 router.get('/entregas-pendentes', async (req, res) => {
   try {
     const db = getDB();
-    res.json(await qa(db, `SELECT p.*, f.nome as fornecedor_nome, o.numero_os, o.cliente, o.prioridade, o.tipo FROM pecas_os p LEFT JOIN fornecedores f ON p.fornecedor_id = f.id LEFT JOIN ordens_servico o ON p.os_id = o.id WHERE p.status_entrega NOT IN ('Entregue','Cancelado') ORDER BY CASE o.prioridade WHEN 'Alta' THEN 1 WHEN 'Média' THEN 2 ELSE 3 END, p.data_entrega_prevista ASC`));
+    res.json(await qa(db, `SELECT p.*, f.nome as fornecedor_nome, o.numero_os, o.cliente, o.prioridade, o.tipo FROM pecas_os p LEFT JOIN fornecedores f ON p.fornecedor_id = f.id LEFT JOIN ordens_servico o ON p.os_id = o.id WHERE p.status_entrega NOT IN ('Entregue','Cancelado','Aguardando Triagem','Separado (Almoxarifado)') ORDER BY CASE o.prioridade WHEN 'Alta' THEN 1 WHEN 'Média' THEN 2 ELSE 3 END, p.data_entrega_prevista ASC`));
   } catch(e) { res.status(500).json({ erro: e.message }); }
 });
 

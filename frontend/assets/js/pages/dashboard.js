@@ -48,6 +48,7 @@ const PageDashboard = {
 
       const atrasadas  = d.pecas_atrasadas || [];
       const vencendo   = d.os_vencendo     || [];
+      const aguardandoTriagem = d.os_aguardando_triagem || 0;
 
       document.getElementById('content').innerHTML =
 
@@ -62,6 +63,15 @@ const PageDashboard = {
             '<div class="kpi-sub">' + k.sub + '</div></div>';
         }).join('') +
         '</div>' +
+
+        // ── Alerta de Triagem ──────────────────────────────────────────────
+        (aguardandoTriagem > 0 ? '<div class="card mb-14" style="border-left:4px solid #eab308;cursor:pointer" onclick="App.navigate(\'triagem\')">' +
+          '<div style="display:flex;align-items:center;gap:12px">' +
+          '<span style="font-size:24px">🔍</span>' +
+          '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#92400e">' + aguardandoTriagem + ' O.S. aguardando triagem do almoxarifado</div>' +
+          '<div style="font-size:11px;color:var(--text-3)">Revise quais peças já estão em estoque antes de seguir para compras</div></div>' +
+          '<span class="btn btn-secondary btn-sm">Revisar →</span>' +
+          '</div></div>' : '') +
 
         // ── Alertas (só mostra se tiver algo) ──────────────────────────────
         (atrasadas.length || vencendo.length ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">' : '') +

@@ -36,6 +36,8 @@ const PageDetalheOS = {
   // Badge colorido para status de entrega
   badgeStatus(s) {
     const map = {
+      'Aguardando Triagem':       { bg:'#fef3c7', cor:'#92400e', dot:'#eab308' },
+      'Separado (Almoxarifado)':  { bg:'#dcfce7', cor:'#166534', dot:'#22c55e' },
       'Pendente':         { bg:'#f1f5f9', cor:'#64748b', dot:'#94a3b8' },
       'Pedido realizado': { bg:'#eff6ff', cor:'#1a56db', dot:'#1a56db' },
       'Em trânsito':      { bg:'#fffbeb', cor:'#d97706', dot:'#d97706' },
@@ -210,7 +212,7 @@ const PageDetalheOS = {
         this.badgeStatus(p.status_entrega) +
         '<span style="font-size:9px;color:var(--text-4);margin-left:3px">▼</span></div>' +
         '<div id="status-menu-' + p.id + '" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);min-width:160px;padding:4px 0">' +
-        ['Pendente','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(s =>
+        ['Aguardando Triagem','Separado (Almoxarifado)','Pendente','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(s =>
           '<div onclick="PageDetalheOS.atualizarStatusPeca(' + p.id + ',\'' + s + '\')" style="padding:7px 12px;cursor:pointer;font-size:12px" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
           this.badgeStatus(s) + '</div>'
         ).join('') +

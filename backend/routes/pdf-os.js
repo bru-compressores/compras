@@ -4,16 +4,17 @@ const { autenticar } = require('../middleware/auth');
 const router = express.Router();
 router.use(autenticar);
 
-router.get('/:id', (req, res) => {
-  const db = getDB();
-  const os = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(req.params.id);
-  if (!os) return res.status(404).json({ erro: 'O.S. não encontrada' });
+router.get('/:id', async (req, res) => {
+  try {
+    const db = getDB();
+    const os = await Promise.resolve(db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(req.params.id));
+    if (!os) return res.status(404).json({ erro: 'O.S. não encontrada' });
 
-  const pecas = db.prepare(`
-    SELECT p.*, f.nome as fornecedor_nome
-    FROM pecas_os p LEFT JOIN fornecedores f ON p.fornecedor_id = f.id
-    WHERE p.os_id = ? ORDER BY p.criado_em
-  `).all(req.params.id);
+    const pecas = await Promise.resolve(db.prepare(`
+      SELECT p.*, f.nome as fornecedor_nome
+      FROM pecas_os p LEFT JOIN fornecedores f ON p.fornecedor_id = f.id
+      WHERE p.os_id = ? ORDER BY p.criado_em
+    `).all(req.params.id));
 
   const fmt = d => {
     if (!d) return '—';
@@ -152,6 +153,9 @@ router.get('/:id', (req, res) => {
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
+  } catch(e) {
+    res.status(500).send('Erro ao gerar PDF: ' + e.message);
+  }
 });
 
 module.exports = router;

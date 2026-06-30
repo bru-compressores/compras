@@ -36,6 +36,7 @@ const App = {
       fornecedores:  PageFornecedores,
       relatorios:    PageRelatorios,
       kanban:        PageKanban,
+      triagem:       PageTriagem,
       importar:      PageImportar,
       backup:        PageBackup,
       configuracoes: PageConfiguracoes,
