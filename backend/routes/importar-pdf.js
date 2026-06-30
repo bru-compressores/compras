@@ -154,23 +154,25 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
       if (osExistente) {
         osId = osExistente.id;
       } else {
-        db.prepare(
+        await Promise.resolve(db.prepare(
           "INSERT INTO ordens_servico (numero_os, cliente, equipamento, data_abertura, data_conclusao_estimada, status, prioridade, criado_por) VALUES (?, ?, ?, ?, ?, 'Aberta', ?, ?)"
-        ).run(dados.numero_os, dados.cliente, equipamento, dados.data_abertura, dados.data_conclusao || null, dados.prioridade, req.usuario.id);
-        // Busca o ID real pelo numero_os (evita problema de lastInsertRowid no sql.js)
-        osId = await Promise.resolve(db.prepare('SELECT id FROM ordens_servico WHERE numero_os = ?').get(dados.numero_os)).id;
-        db.prepare('INSERT INTO historico_status (os_id, status_anterior, status_novo, observacao, usuario_id) VALUES (?, ?, ?, ?, ?)')
-          .run(osId, null, 'Aberta', 'Importado via PDF: ' + nome, req.usuario.id);
+        ).run(dados.numero_os, dados.cliente, equipamento, dados.data_abertura, dados.data_conclusao || null, dados.prioridade, req.usuario.id));
+        // Busca o ID real pelo numero_os
+        const nova = await Promise.resolve(db.prepare('SELECT id FROM ordens_servico WHERE numero_os = ?').get(dados.numero_os));
+        osId = nova.id;
+        await Promise.resolve(db.prepare('INSERT INTO historico_status (os_id, status_anterior, status_novo, observacao, usuario_id) VALUES (?, ?, ?, ?, ?)')
+          .run(osId, null, 'Aberta', 'Importado via PDF: ' + nome, req.usuario.id));
       }
 
       // Importa pecas apenas se OS ainda nao tem nenhuma
-      const jaTem = db.prepare('SELECT COUNT(*) as total FROM pecas_os WHERE os_id = ?').get(osId).total;
+      const jaTemRow = await Promise.resolve(db.prepare('SELECT COUNT(*) as total FROM pecas_os WHERE os_id = ?').get(osId));
+      const jaTem = parseInt(jaTemRow.total) || 0;
       let pecasImportadas = 0;
       if (jaTem === 0) {
         for (const p of dados.pecas) {
           if (!p.descricao) continue;
-          db.prepare("INSERT INTO pecas_os (os_id, codigo, descricao, quantidade, preco_unitario, status_entrega) VALUES (?, ?, ?, ?, ?, 'Pendente')")
-            .run(osId, p.codigo || null, p.descricao, p.quantidade || 1, p.preco_unitario || null);
+          await Promise.resolve(db.prepare("INSERT INTO pecas_os (os_id, codigo, descricao, quantidade, preco_unitario, status_entrega) VALUES (?, ?, ?, ?, ?, 'Pendente')")
+            .run(osId, p.codigo || null, p.descricao, p.quantidade || 1, p.preco_unitario || null));
           pecasImportadas++;
         }
       }
