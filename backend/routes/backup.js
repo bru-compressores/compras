@@ -28,37 +28,77 @@ router.get('/exportar-json', async (req, res) => {
 });
 
 router.post('/restaurar', express.json({ limit: '50mb' }), async (req, res) => {
+  // Responde imediatamente para evitar timeout do proxy, processa em background
+  res.json({ mensagem: 'Restauração iniciada. Isso pode levar alguns minutos — recarregue a página depois.', processando: true });
+
   const db = getDB();
   const dados = req.body;
-  if (!dados || typeof dados !== 'object') return res.status(400).json({ erro: 'JSON inválido' });
-  let os_imp = 0, pecas_imp = 0, forn_imp = 0, erros = [];
+  if (!dados || typeof dados !== 'object') return;
+
+  (async () => {
+    let os_imp = 0, pecas_imp = 0, forn_imp = 0, erros = [];
+    try {
+      // Fornecedores em paralelo (lotes de 20)
+      const fornecedores = (dados.fornecedores||[]).filter(f => f.nome);
+      for (let i = 0; i < fornecedores.length; i += 20) {
+        const lote = fornecedores.slice(i, i+20);
+        await Promise.all(lote.map(async f => {
+          try {
+            if (!await q(db,'SELECT id FROM fornecedores WHERE nome = ?',f.nome)) {
+              await qr(db,'INSERT INTO fornecedores (nome,cnpj,contato,telefone,email,cidade,estado) VALUES (?,?,?,?,?,?,?)',f.nome,f.cnpj||null,f.contato||null,f.telefone||null,f.email||null,f.cidade||null,f.estado||null);
+              forn_imp++;
+            }
+          } catch(e) { erros.push('Forn: ' + e.message); }
+        }));
+      }
+
+      // O.S. sequencial (precisa do mapa de IDs, mas é rápido o suficiente)
+      const mapaOS = {};
+      const oss = (dados.ordens_servico||[]).filter(os => os.numero_os);
+      for (let i = 0; i < oss.length; i += 10) {
+        const lote = oss.slice(i, i+10);
+        await Promise.all(lote.map(async os => {
+          try {
+            const ex = await q(db,'SELECT id FROM ordens_servico WHERE numero_os = ?',os.numero_os);
+            if (ex) { mapaOS[os.id] = ex.id; return; }
+            await qr(db,`INSERT INTO ordens_servico (numero_os,cliente,equipamento,data_abertura,data_conclusao_estimada,status,prioridade,tipo,transporte,observacoes) VALUES (?,?,?,?,?,?,?,?,?,?)`,os.numero_os,os.cliente,os.equipamento||'—',os.data_abertura,os.data_conclusao_estimada||null,os.status||'Aberta',os.prioridade||'Média',os.tipo||'OS',os.transporte||null,os.observacoes||null);
+            const nova = await q(db,'SELECT id FROM ordens_servico WHERE numero_os = ?',os.numero_os);
+            mapaOS[os.id] = nova.id; os_imp++;
+          } catch(e) { erros.push('OS ' + os.numero_os + ': ' + e.message); }
+        }));
+      }
+
+      // Peças em paralelo (lotes de 20)
+      const pecas = (dados.pecas_os||[]).filter(p => p.descricao && mapaOS[p.os_id]);
+      for (let i = 0; i < pecas.length; i += 20) {
+        const lote = pecas.slice(i, i+20);
+        await Promise.all(lote.map(async p => {
+          const osId = mapaOS[p.os_id];
+          try {
+            if (!await q(db,'SELECT id FROM pecas_os WHERE os_id = ? AND descricao = ? LIMIT 1',osId,p.descricao)) {
+              await qr(db,`INSERT INTO pecas_os (os_id,codigo,descricao,quantidade,preco_unitario,preco_cotado,preco_fechado,status_entrega,data_entrega_prevista,numero_rastreio,observacoes,transporte) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,osId,p.codigo||null,p.descricao,p.quantidade||1,p.preco_unitario||null,p.preco_cotado||null,p.preco_fechado||null,p.status_entrega||'Pendente',p.data_entrega_prevista||null,p.numero_rastreio||null,p.observacoes||null,p.transporte||null);
+              pecas_imp++;
+            }
+          } catch(e) { erros.push('Peça: ' + e.message); }
+        }));
+      }
+
+      console.log(`✅ Restauração concluída: ${os_imp} OS, ${pecas_imp} peças, ${forn_imp} fornecedores`);
+      if (erros.length) console.log('Erros:', erros.slice(0,20));
+    } catch(e) {
+      console.error('Erro na restauração em background:', e.message);
+    }
+  })();
+});
+
+// GET /api/backup/status — verifica contagens atuais (para o frontend conferir progresso)
+router.get('/status', async (req, res) => {
   try {
-    for (const f of (dados.fornecedores||[])) {
-      if (!f.nome) continue;
-      try { if (!await q(db,'SELECT id FROM fornecedores WHERE nome = ?',f.nome)) { await qr(db,'INSERT INTO fornecedores (nome,cnpj,contato,telefone,email,cidade,estado) VALUES (?,?,?,?,?,?,?)',f.nome,f.cnpj||null,f.contato||null,f.telefone||null,f.email||null,f.cidade||null,f.estado||null); forn_imp++; } } catch(e) { erros.push(e.message); }
-    }
-    const mapaOS = {};
-    for (const os of (dados.ordens_servico||[])) {
-      if (!os.numero_os) continue;
-      try {
-        const ex = await q(db,'SELECT id FROM ordens_servico WHERE numero_os = ?',os.numero_os);
-        if (ex) { mapaOS[os.id] = ex.id; continue; }
-        await qr(db,`INSERT INTO ordens_servico (numero_os,cliente,equipamento,data_abertura,data_conclusao_estimada,status,prioridade,tipo,transporte,observacoes) VALUES (?,?,?,?,?,?,?,?,?,?)`,os.numero_os,os.cliente,os.equipamento||'—',os.data_abertura,os.data_conclusao_estimada||null,os.status||'Aberta',os.prioridade||'Média',os.tipo||'OS',os.transporte||null,os.observacoes||null);
-        const nova = await q(db,'SELECT id FROM ordens_servico WHERE numero_os = ?',os.numero_os);
-        mapaOS[os.id] = nova.id; os_imp++;
-      } catch(e) { erros.push(e.message); }
-    }
-    for (const p of (dados.pecas_os||[])) {
-      if (!p.descricao) continue;
-      const osId = mapaOS[p.os_id]; if (!osId) continue;
-      try {
-        if (!await q(db,'SELECT id FROM pecas_os WHERE os_id = ? AND descricao = ? LIMIT 1',osId,p.descricao)) {
-          await qr(db,`INSERT INTO pecas_os (os_id,codigo,descricao,quantidade,preco_unitario,preco_cotado,preco_fechado,status_entrega,data_entrega_prevista,numero_rastreio,observacoes,transporte) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,osId,p.codigo||null,p.descricao,p.quantidade||1,p.preco_unitario||null,p.preco_cotado||null,p.preco_fechado||null,p.status_entrega||'Pendente',p.data_entrega_prevista||null,p.numero_rastreio||null,p.observacoes||null,p.transporte||null);
-          pecas_imp++;
-        }
-      } catch(e) { erros.push(e.message); }
-    }
-    res.json({ mensagem: `${os_imp} O.S., ${pecas_imp} peças e ${forn_imp} fornecedores restaurados.`, os_imp, pecas_imp, forn_imp, erros: erros.slice(0,10) });
+    const db = getDB();
+    const os = await q(db, 'SELECT COUNT(*) as total FROM ordens_servico');
+    const pecas = await q(db, 'SELECT COUNT(*) as total FROM pecas_os');
+    const forn = await q(db, 'SELECT COUNT(*) as total FROM fornecedores');
+    res.json({ ordens_servico: os.total, pecas_os: pecas.total, fornecedores: forn.total });
   } catch(e) { res.status(500).json({ erro: e.message }); }
 });
 
