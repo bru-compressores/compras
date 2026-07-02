@@ -118,7 +118,7 @@ router.get('/:id', async (req, res) => {
   <div class="section-title">Peças (${pecas.length})</div>
   <table>
     <thead><tr>
-      <th>Código</th><th>Descrição</th><th>Qtd</th>
+      <th>Código</th><th>Cód. Fabricante</th><th>Descrição</th><th>Qtd</th>
       <th>Preço Venda</th><th>Valor Fechado</th><th>Markup</th>
       <th>Fornecedor</th><th>Transportadora</th><th>Status</th>
       <th>Prev. Entrega</th><th>Rastreio</th>
@@ -126,6 +126,7 @@ router.get('/:id', async (req, res) => {
     <tbody>
       ${pecas.map(p => `<tr>
         <td><code style="background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:10px">${p.codigo||'—'}</code></td>
+        <td><code style="background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:10px">${p.codigo_fabricante||'—'}</code></td>
         <td style="max-width:180px">${p.descricao}</td>
         <td style="text-align:center">${p.quantidade}</td>
         <td>${moeda(p.preco_unitario)}</td>

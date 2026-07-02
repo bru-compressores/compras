@@ -20,6 +20,7 @@ async function runMigrations(db) {
     `ALTER TABLE pecas_os ADD COLUMN preco_cotado REAL`,
     `ALTER TABLE pecas_os ADD COLUMN preco_fechado REAL`,
     `ALTER TABLE pecas_os ADD COLUMN transporte TEXT`,
+    `ALTER TABLE pecas_os ADD COLUMN codigo_fabricante TEXT`,
     `ALTER TABLE fornecedores ADD COLUMN cnpj TEXT`,
     `ALTER TABLE fornecedores ADD COLUMN cidade TEXT`,
     `ALTER TABLE fornecedores ADD COLUMN estado TEXT`,

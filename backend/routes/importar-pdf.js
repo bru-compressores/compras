@@ -78,42 +78,90 @@ function extrairOSPrimam(text) {
     const mb = ln.match(/Marca[:\s]+([A-Z][^\n\/,]+)/i); if (mb) r.marca = mb[1].trim();
   }
 
-  // Pecas — abordagem stateful linha a linha (igual pdfExtractor comercial)
-  const numRe   = '\\d+(?:\\.\\d{3})*,\\d{2}';
-  const RE_VAL  = new RegExp('^(UN|LT|L|KG|PC|CX|MT|GL|M2|M3|PAR|JG|SC)(' + numRe + ')(' + numRe + ')(' + numRe + ')\\d*$', 'i');
-  const RE_TUDO = new RegExp('^(\\d{3,6})(.+?)(UN|LT|L|KG|PC|CX|MT|GL)(' + numRe + ')(' + numRe + ')(' + numRe + ')\\d*$', 'i');
-  const ANOS    = new Set(['2023','2024','2025','2026','2027','2028']);
+  // ── Detecção de layout ──────────────────────────────────────────────────
+  // Layout 1: "ITEM CODIGO DESCRICAO UNID QTD UNIT TOTAL" (tudo numa linha)
+  //           ou 3 linhas: "CODIGO" / "DESCRICAO" / "UNID QTD UNIT TOTAL"
+  // Layout 2: 3 linhas: "PRECO CODIGO" / "DESCRICAO" / "UNID QTD COD_FABRICANTE"
+  //           (colunas na ordem: Qtd | Unid | Descricao | Codigo | Vlr.Unit | Cod.Fabricante)
 
-  let emProdutos = false, codigoPendente = null, descricaoPendente = null;
+  const numRe    = '\\d+(?:\\.\\d{3})*,\\d{2}';
+  const RE_TUDO  = new RegExp('^(\\d{3,6})(.+?)(UN|LT|L|KG|PC|CX|MT|GL|M2|M3|PAR|JG|SC)(' + numRe + ')(' + numRe + ')(' + numRe + ')\\d*$', 'i');
+  const RE_VAL   = new RegExp('^(UN|LT|L|KG|PC|CX|MT|GL|M2|M3|PAR|JG|SC)(' + numRe + ')(' + numRe + ')(' + numRe + ')\\d*$', 'i');
+  // Layout 2: linha 1 tem "PRECO4casasDecimais + CODIGO" (ex: "282,00006110")
+  const RE_L2_PC  = new RegExp('^(\\d+(?:\\.\\d{3})*,\\d{4})(\\d{3,6})$');
+  // Layout 2: linha 3 tem "UNID + QTD2dec + COD_FABRICANTE" (ex: "UN1,00KA600-030TB")
+  const RE_L2_UNID = /^(UN|LT|L|KG|PC|CX|MT|GL|M2|M3|PAR|JG|SC)(\d+,\d{2})(.*)$/i;
+  const ANOS     = new Set(['2023','2024','2025','2026','2027','2028']);
 
-  for (const ln of linhas) {
-    if (/^PRODUTO\(S\)$/.test(ln))                           { emProdutos = true;  continue; }
-    if (/^SERVI[C\u00c7]O\(S\)$/.test(ln) || /^Subtotal Produto/.test(ln)) { emProdutos = false; continue; }
+  let emProdutos = false;
+  // Estado para layout 1
+  let codigoPendente = null, descricaoPendente = null;
+  // Estado para layout 2
+  let l2_preco = null, l2_codigo = null, l2_descricao = null;
+
+  for (let idx = 0; idx < linhas.length; idx++) {
+    const ln = linhas[idx];
+    if (/^PRODUTO\(S\)$/.test(ln))                                         { emProdutos = true;  continue; }
+    if (/^SERVI[CÇ]O\(S\)$/.test(ln) || /^Subtotal Produto/.test(ln))     { emProdutos = false; continue; }
     if (!emProdutos || !ln) continue;
+    if (/^(C[oó]digo|Item|Unid|Quantidade|Descri)/i.test(ln))              continue; // cabeçalho
 
-    // Tudo numa linha: "8501OLEO...LT10,00190,001.900,004"
+    // ── Layout 1: tudo numa linha ────────────────────────────────────────
     const mTudo = ln.match(RE_TUDO);
     if (mTudo) {
-      r.pecas.push({ codigo: mTudo[1], descricao: mTudo[2].trim(), quantidade: toNumero(mTudo[4]), preco_unitario: toNumero(mTudo[5]) });
+      r.pecas.push({ codigo: mTudo[1], descricao: mTudo[2].trim(), quantidade: toNumero(mTudo[4]), preco_unitario: toNumero(mTudo[5]), codigo_fabricante: null });
+      codigoPendente = null; descricaoPendente = null; l2_preco = null; l2_codigo = null; l2_descricao = null;
+      continue;
+    }
+
+    // ── Layout 2: linha tipo "282,00006110" (preco4dec + codigo) ─────────
+    const mL2PC = ln.match(RE_L2_PC);
+    if (mL2PC) {
+      // Começa sequência de 3 linhas do layout 2
+      l2_preco = toNumero(mL2PC[1].slice(0, -2)); // preco tem 4 casas, pega como 2
+      l2_codigo = mL2PC[2];
+      l2_descricao = null;
       codigoPendente = null; descricaoPendente = null;
       continue;
     }
 
-    // Linha de valores UN/LT... + numeros
+    // ── Layout 2: linha de descrição (vem depois do preco+codigo) ────────
+    if (l2_codigo && !l2_descricao && ln && !/^\d/.test(ln)) {
+      l2_descricao = ln;
+      continue;
+    }
+
+    // ── Layout 2: linha "UNID + QTD + COD_FABRICANTE" ────────────────────
+    if (l2_codigo && l2_descricao) {
+      const mL2U = ln.match(RE_L2_UNID);
+      if (mL2U) {
+        r.pecas.push({
+          codigo: l2_codigo,
+          descricao: l2_descricao.trim(),
+          quantidade: toNumero(mL2U[2]),
+          preco_unitario: l2_preco,
+          codigo_fabricante: mL2U[3].trim() || null
+        });
+        l2_preco = null; l2_codigo = null; l2_descricao = null;
+        continue;
+      }
+    }
+
+    // ── Layout 1: linha de valores "UNID QTD UNIT TOTAL" ─────────────────
     const mVal = ln.match(RE_VAL);
     if (mVal && codigoPendente) {
-      r.pecas.push({ codigo: codigoPendente, descricao: descricaoPendente || '', quantidade: toNumero(mVal[2]), preco_unitario: toNumero(mVal[3]) });
+      r.pecas.push({ codigo: codigoPendente, descricao: descricaoPendente || '', quantidade: toNumero(mVal[2]), preco_unitario: toNumero(mVal[3]), codigo_fabricante: null });
       codigoPendente = null; descricaoPendente = null;
       continue;
     }
 
-    // Codigo isolado
+    // ── Layout 1: codigo isolado ──────────────────────────────────────────
     if (/^\d{3,6}$/.test(ln) && !ANOS.has(ln)) {
       codigoPendente = ln; descricaoPendente = null;
       continue;
     }
 
-    // Descricao (linha logo apos codigo)
+    // ── Layout 1: descricao logo apos codigo ─────────────────────────────
     if (codigoPendente && !descricaoPendente && ln && !/^(C.digo|Item|Unid|Valor)/i.test(ln)) {
       descricaoPendente = ln;
       continue;
@@ -171,8 +219,8 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
       if (jaTem === 0) {
         for (const p of dados.pecas) {
           if (!p.descricao) continue;
-          await Promise.resolve(db.prepare("INSERT INTO pecas_os (os_id, codigo, descricao, quantidade, preco_unitario, status_entrega) VALUES (?, ?, ?, ?, ?, 'Aguardando Triagem')")
-            .run(osId, p.codigo || null, p.descricao, p.quantidade || 1, p.preco_unitario || null));
+          await Promise.resolve(db.prepare("INSERT INTO pecas_os (os_id, codigo, descricao, quantidade, preco_unitario, status_entrega, codigo_fabricante) VALUES (?, ?, ?, ?, ?, 'Aguardando Triagem', ?)")
+            .run(osId, p.codigo || null, p.descricao, p.quantidade || 1, p.preco_unitario || null, p.codigo_fabricante || null));
           pecasImportadas++;
         }
       }

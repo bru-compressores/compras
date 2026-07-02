@@ -75,7 +75,6 @@ const App = {
     if (this.usuario.papel !== 'admin') {
       document.querySelectorAll('.nav-admin, #nav-admin-section').forEach(el => el.classList.add('hidden'));
     }
-    if (window.innerWidth <= 768) document.getElementById('menu-toggle').style.display = 'flex';
     this.navigate('dashboard');
   },
 
@@ -89,6 +88,12 @@ const App = {
     document.getElementById('topbar-title').textContent = this.titles[pagina] || pagina;
     document.getElementById('topbar-bread').textContent = this.breadcrumbs[pagina] || 'BRU Compressores';
     document.getElementById('topbar-actions').innerHTML = '';
+    // Fecha o menu lateral no mobile após navegar
+    if (window.innerWidth <= 768) {
+      document.getElementById('sidebar').classList.remove('open');
+      document.body.classList.remove('sidebar-open');
+    }
+    window.scrollTo(0, 0);
     const page = this.getPages()[pagina];
     if (page) page.render(params);
     else document.getElementById('content').innerHTML = '<div class="empty-state"><p>Página não encontrada</p></div>';
@@ -101,7 +106,11 @@ const App = {
     } else { this.navigate('dashboard'); }
   },
 
-  toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); },
+  toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('open');
+    document.body.classList.toggle('sidebar-open', sidebar.classList.contains('open'));
+  },
 
   toast(msg, tipo = 'default') {
     const t = document.createElement('div');

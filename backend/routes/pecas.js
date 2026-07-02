@@ -33,8 +33,8 @@ router.post('/', async (req, res) => {
     const { os_id, codigo, descricao, quantidade, preco_unitario, preco_cotado, preco_fechado, fornecedor_id, status_entrega, data_entrega_prevista, numero_rastreio, observacoes, transporte } = req.body;
     if (!os_id || !descricao) return res.status(400).json({ erro: 'OS e descrição são obrigatórios' });
     if (!await q(db, 'SELECT id FROM ordens_servico WHERE id = ?', os_id)) return res.status(404).json({ erro: 'O.S. não encontrada' });
-    await qr(db, `INSERT INTO pecas_os (os_id,codigo,descricao,quantidade,preco_unitario,preco_cotado,preco_fechado,fornecedor_id,status_entrega,data_entrega_prevista,numero_rastreio,observacoes,transporte) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      os_id, codigo||null, descricao, quantidade||1, preco_unitario||null, preco_cotado||null, preco_fechado||null, fornecedor_id||null, status_entrega||'Pendente', data_entrega_prevista||null, numero_rastreio||null, observacoes||null, transporte||null);
+    await qr(db, `INSERT INTO pecas_os (os_id,codigo,descricao,quantidade,preco_unitario,preco_cotado,preco_fechado,fornecedor_id,status_entrega,data_entrega_prevista,numero_rastreio,observacoes,transporte,codigo_fabricante) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      os_id, codigo||null, descricao, quantidade||1, preco_unitario||null, preco_cotado||null, preco_fechado||null, fornecedor_id||null, status_entrega||'Pendente', data_entrega_prevista||null, numero_rastreio||null, observacoes||null, transporte||null, req.body.codigo_fabricante||null);
     const nova = await q(db, 'SELECT id FROM pecas_os WHERE os_id = ? ORDER BY id DESC LIMIT 1', os_id);
     res.status(201).json({ id: nova?.id, mensagem: 'Peça adicionada' });
   } catch(e) { res.status(500).json({ erro: e.message }); }
@@ -46,8 +46,9 @@ router.put('/:id', async (req, res) => {
     const p = await q(db, 'SELECT * FROM pecas_os WHERE id = ?', req.params.id);
     if (!p) return res.status(404).json({ erro: 'Peça não encontrada' });
     const { codigo, descricao, quantidade, preco_unitario, preco_cotado, preco_fechado, fornecedor_id, status_entrega, data_entrega_prevista, numero_rastreio, observacoes, transporte } = req.body;
-    await qr(db, `UPDATE pecas_os SET codigo=?,descricao=?,quantidade=?,preco_unitario=?,preco_cotado=?,preco_fechado=?,fornecedor_id=?,status_entrega=?,data_entrega_prevista=?,numero_rastreio=?,observacoes=?,transporte=?,atualizado_em=NOW() WHERE id=?`,
-      codigo!==undefined?codigo:p.codigo, descricao||p.descricao, quantidade||p.quantidade, preco_unitario!==undefined?preco_unitario:p.preco_unitario, preco_cotado!==undefined?preco_cotado:p.preco_cotado, preco_fechado!==undefined?preco_fechado:p.preco_fechado, fornecedor_id!==undefined?fornecedor_id:p.fornecedor_id, status_entrega||p.status_entrega, data_entrega_prevista!==undefined?data_entrega_prevista:p.data_entrega_prevista, numero_rastreio!==undefined?numero_rastreio:p.numero_rastreio, observacoes!==undefined?observacoes:p.observacoes, transporte!==undefined?transporte:p.transporte, req.params.id);
+    const { codigo_fabricante } = req.body;
+    await qr(db, `UPDATE pecas_os SET codigo=?,descricao=?,quantidade=?,preco_unitario=?,preco_cotado=?,preco_fechado=?,fornecedor_id=?,status_entrega=?,data_entrega_prevista=?,numero_rastreio=?,observacoes=?,transporte=?,codigo_fabricante=?,atualizado_em=NOW() WHERE id=?`,
+      codigo!==undefined?codigo:p.codigo, descricao||p.descricao, quantidade||p.quantidade, preco_unitario!==undefined?preco_unitario:p.preco_unitario, preco_cotado!==undefined?preco_cotado:p.preco_cotado, preco_fechado!==undefined?preco_fechado:p.preco_fechado, fornecedor_id!==undefined?fornecedor_id:p.fornecedor_id, status_entrega||p.status_entrega, data_entrega_prevista!==undefined?data_entrega_prevista:p.data_entrega_prevista, numero_rastreio!==undefined?numero_rastreio:p.numero_rastreio, observacoes!==undefined?observacoes:p.observacoes, transporte!==undefined?transporte:p.transporte, codigo_fabricante!==undefined?codigo_fabricante:p.codigo_fabricante, req.params.id);
     res.json({ mensagem: 'Peça atualizada' });
   } catch(e) { res.status(500).json({ erro: e.message }); }
 });

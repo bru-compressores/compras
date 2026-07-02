@@ -159,6 +159,7 @@ const PageDetalheOS = {
 
   _colsPecas: [
     { key:'codigo',               label:'Código',        tipo:'str'  },
+    { key:'codigo_fabricante',    label:'Cód. Fabricante',tipo:'str' },
     { key:'descricao',            label:'Descrição',     tipo:'str'  },
     { key:'quantidade',           label:'Qtd',           tipo:'num'  },
     { key:'preco_unitario',       label:'Venda',         tipo:'num'  },
@@ -198,6 +199,7 @@ const PageDetalheOS = {
 
       return '<tr onclick="PageDetalheOS.editarPecaInline(' + p.id + ')" style="cursor:pointer">' +
         '<td>' + (p.codigo||'<span class="text-muted">—</span>') + '</td>' +
+        '<td>' + (p.codigo_fabricante ? '<code style="font-size:10px;background:var(--surface-2);padding:1px 5px;border-radius:4px">' + p.codigo_fabricante + '</code>' : '<span class="text-muted">—</span>') + '</td>' +
         '<td style="max-width:180px">' + p.descricao + '</td>' +
         '<td style="text-align:center">' + p.quantidade + '</td>' +
         '<td>' + Fmt.moeda(p.preco_unitario) + '</td>' +
@@ -301,6 +303,7 @@ const PageDetalheOS = {
       document.getElementById('peca-data-prev').value    = peca.data_entrega_prevista?.split('T')[0]||'';
       document.getElementById('peca-rastreio').value     = peca.numero_rastreio||'';
       document.getElementById('peca-obs').value          = peca.observacoes||'';
+      document.getElementById('peca-cod-fab').value      = peca.codigo_fabricante||'';
     } else {
       document.getElementById('form-peca').reset();
       document.getElementById('peca-fornecedor-wrap').innerHTML =
@@ -334,7 +337,8 @@ const PageDetalheOS = {
       status_entrega:       document.getElementById('peca-status').value,
       data_entrega_prevista:document.getElementById('peca-data-prev').value||null,
       numero_rastreio:      document.getElementById('peca-rastreio').value.trim()||null,
-      observacoes:          document.getElementById('peca-obs').value.trim()||null
+      observacoes:          document.getElementById('peca-obs').value.trim()||null,
+      codigo_fabricante:    document.getElementById('peca-cod-fab')?.value?.trim()||null
     };
     if (!payload.descricao) { App.toast('Descrição é obrigatória','error'); return; }
     try {
@@ -573,6 +577,7 @@ const PageDetalheOS = {
       '<div class="form-group"><label class="form-label">Preço Cotado</label><input id="peca-preco-cotado" class="form-input" type="number" step="0.01"></div>' +
       '<div class="form-group"><label class="form-label">Valor Fechado</label><input id="peca-preco-fechado" class="form-input" type="number" step="0.01"></div>' +
       '<div class="form-group form-full"><label class="form-label">Fornecedor</label><div id="peca-fornecedor-wrap"><input type="hidden" id="peca-fornecedor" value=""></div></div>' +
+      '<div class="form-group"><label class="form-label">Cód. Fabricante</label><input id="peca-cod-fab" class="form-input" placeholder="Ex: KA600-030TB"></div>' +
       // Transporte com datalist (digita e salva histórico)
       '<div class="form-group"><label class="form-label">Transportadora</label>' +
       '<input id="peca-transporte" class="form-input" list="transportes-list" placeholder="Ex: RODONAVES, SEDEX...">' +
