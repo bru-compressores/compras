@@ -195,11 +195,38 @@ const PageOrdens = {
   },
 
   // Modal rápido de importação PDF na aba Ordens
-  abrirImportPDF() { document.getElementById('modal-import-pdf').classList.remove('hidden'); },
+  abrirImportPDF() {
+    document.getElementById('modal-import-pdf').classList.remove('hidden');
+    document.getElementById('import-pdf-lista').innerHTML = '';
+    document.getElementById('import-pdf-resultado').innerHTML = '';
+  },
   fecharImportPDF() {
     document.getElementById('modal-import-pdf').classList.add('hidden');
     document.getElementById('import-pdf-resultado').innerHTML = '';
+    document.getElementById('import-pdf-lista').innerHTML = '';
     document.getElementById('import-pdf-status').textContent = '';
+    document.getElementById('import-pdf-files').value = '';
+  },
+
+  mostrarArquivosSelecionados(files) {
+    const lista = document.getElementById('import-pdf-lista');
+    if (!files.length) { lista.innerHTML = ''; return; }
+    lista.innerHTML =
+      '<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px;margin-bottom:4px">' +
+      '<div style="font-size:11px;font-weight:600;color:var(--text-3);margin-bottom:6px">' +
+      '<span style="background:var(--brand2);color:#fff;border-radius:20px;padding:1px 7px;margin-right:5px">' + files.length + '</span>' +
+      'arquivo(s) selecionado(s)</div>' +
+      '<div style="display:flex;flex-direction:column;gap:3px;max-height:150px;overflow-y:auto">' +
+      Array.from(files).map(f => {
+        const kb = Math.round(f.size / 1024);
+        const tam = kb > 1024 ? (kb/1024).toFixed(1) + ' MB' : kb + ' KB';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surface);border-radius:var(--radius);font-size:11px">' +
+          '<span>📄</span>' +
+          '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">' + f.name + '</span>' +
+          '<span style="color:var(--text-4);flex-shrink:0">' + tam + '</span>' +
+          '</div>';
+      }).join('') +
+      '</div></div>';
   },
 
   async importarPDFs() {
@@ -259,8 +286,9 @@ const PageOrdens = {
             <div style="font-size:28px;margin-bottom:6px">📄</div>
             <div style="font-size:12px;font-weight:600;color:var(--text-2)">Clique ou arraste os PDFs aqui</div>
             <div style="font-size:11px;color:var(--text-4);margin-top:3px">Múltiplos arquivos ao mesmo tempo</div>
-            <input type="file" id="import-pdf-files" accept=".pdf" multiple style="display:none">
+            <input type="file" id="import-pdf-files" accept=".pdf" multiple style="display:none" onchange="PageOrdens.mostrarArquivosSelecionados(this.files)">
           </div>
+          <div id="import-pdf-lista" style="margin-bottom:10px"></div>
           <div id="import-pdf-resultado"></div>
           <div id="import-pdf-tipo" class="hidden" style="background:var(--info-bg);padding:12px;border-radius:var(--radius);margin-top:10px">
             <div style="font-size:12px;font-weight:600;margin-bottom:8px">Qual é o tipo das O.S. importadas?</div>
