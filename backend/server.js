@@ -64,6 +64,7 @@ initDB().then(async db => {
   app.use('/api/relatorios',    require('./routes/relatorios'));
   app.use('/api/pdf-os',        require('./routes/pdf-os'));
   app.use('/api/comentarios',   require('./routes/comentarios'));
+  app.use('/api/triagem',       require('./routes/triagem'));
   app.use('/api',               require('./routes/dashboard'));
 
   app.get('*', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html')));
