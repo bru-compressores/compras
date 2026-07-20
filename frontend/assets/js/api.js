@@ -77,8 +77,6 @@ const Fmt = {
 
   statusEntrega(s) {
     const map = {
-      'Aguardando Triagem': 'badge-triagem',
-      'Separado (Almoxarifado)': 'badge-separado-almox',
       'Pendente': 'badge-pendente',
       'Pedido realizado': 'badge-pedido',
       'Em trânsito': 'badge-transito',

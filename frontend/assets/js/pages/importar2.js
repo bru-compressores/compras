@@ -68,24 +68,53 @@ const PageImportar = {
   adicionarArquivos(files) { this.arquivos = [...this.arquivos, ...files]; this.renderLista(); },
   renderLista() {
     const el = document.getElementById('lista-arquivos');
-    if (!this.arquivos.length) { el.innerHTML=''; document.getElementById('btn-importar').disabled=true; return; }
+    const dropzone = document.getElementById('dropzone');
+    if (!this.arquivos.length) {
+      el.innerHTML = '';
+      document.getElementById('btn-importar').disabled = true;
+      // Restaura dropzone ao tamanho normal
+      if (dropzone) dropzone.style.padding = '28px';
+      return;
+    }
+
+    // Encolhe o dropzone para dar espaço à lista
+    if (dropzone) dropzone.style.padding = '12px';
+
     el.innerHTML =
-      '<div style="font-size:11px;font-weight:600;color:var(--text-3);margin-bottom:6px">' + this.arquivos.length + ' arquivo(s) selecionado(s)</div>' +
-      '<div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto">' +
-      this.arquivos.map((f,i) =>
-        '<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--surface-2);border-radius:var(--radius);font-size:12px">' +
-        '<span style="color:var(--danger)">📄</span>' +
-        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + f.name + '</span>' +
-        '<span style="color:var(--text-4)">' + Math.round(f.size/1024) + ' KB</span>' +
-        '<button class="btn-icon" style="font-size:11px" onclick="PageImportar.remover(' + i + ')">✕</button></div>'
-      ).join('') + '</div>';
+      '<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+      '<span style="background:var(--brand2);color:#fff;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">' + this.arquivos.length + '</span>' +
+      '<span style="font-size:12px;font-weight:600;color:var(--text-2)">arquivo(s) prontos para importar</span>' +
+      '</div>' +
+      '<button onclick="PageImportar.limpar()" style="font-size:11px;color:var(--text-4);background:none;border:none;cursor:pointer;padding:2px 6px">Limpar tudo</button>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto">' +
+      this.arquivos.map((f, i) => {
+        const kb = Math.round(f.size / 1024);
+        const tamanho = kb > 1024 ? (kb/1024).toFixed(1) + ' MB' : kb + ' KB';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface);border-radius:var(--radius);font-size:12px;border:1px solid var(--border)">' +
+          '<span style="font-size:16px">📄</span>' +
+          '<div style="flex:1;min-width:0">' +
+          '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--text)">' + f.name + '</div>' +
+          '<div style="font-size:10px;color:var(--text-4);margin-top:1px">' + tamanho + '</div>' +
+          '</div>' +
+          '<button class="btn-icon" title="Remover" onclick="PageImportar.remover(' + i + ')" style="color:var(--danger);font-size:14px;flex-shrink:0">✕</button>' +
+          '</div>';
+      }).join('') +
+      '</div>' +
+      '</div>';
+
     document.getElementById('btn-importar').disabled = false;
   },
-  remover(i) { this.arquivos.splice(i,1); this.renderLista(); },
+  remover(i) { this.arquivos.splice(i, 1); this.renderLista(); },
   limpar() {
-    this.arquivos = []; this.renderLista();
+    this.arquivos = [];
+    this.renderLista();
     document.getElementById('import-resultado').innerHTML = '';
     document.getElementById('pdf-input').value = '';
+    const dropzone = document.getElementById('dropzone');
+    if (dropzone) dropzone.style.padding = '28px';
   },
 
   async importar() {

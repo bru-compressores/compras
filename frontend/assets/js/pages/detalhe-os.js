@@ -36,8 +36,6 @@ const PageDetalheOS = {
   // Badge colorido para status de entrega
   badgeStatus(s) {
     const map = {
-      'Aguardando Triagem':       { bg:'#fef3c7', cor:'#92400e', dot:'#eab308' },
-      'Separado (Almoxarifado)':  { bg:'#dcfce7', cor:'#166534', dot:'#22c55e' },
       'Pendente':         { bg:'#f1f5f9', cor:'#64748b', dot:'#94a3b8' },
       'Pedido realizado': { bg:'#eff6ff', cor:'#1a56db', dot:'#1a56db' },
       'Em trânsito':      { bg:'#fffbeb', cor:'#d97706', dot:'#d97706' },
@@ -159,7 +157,6 @@ const PageDetalheOS = {
 
   _colsPecas: [
     { key:'codigo',               label:'Código',        tipo:'str'  },
-    { key:'codigo_fabricante',    label:'Cód. Fabricante',tipo:'str' },
     { key:'descricao',            label:'Descrição',     tipo:'str'  },
     { key:'quantidade',           label:'Qtd',           tipo:'num'  },
     { key:'preco_unitario',       label:'Venda',         tipo:'num'  },
@@ -199,7 +196,6 @@ const PageDetalheOS = {
 
       return '<tr onclick="PageDetalheOS.editarPecaInline(' + p.id + ')" style="cursor:pointer">' +
         '<td>' + (p.codigo||'<span class="text-muted">—</span>') + '</td>' +
-        '<td>' + (p.codigo_fabricante ? '<code style="font-size:10px;background:var(--surface-2);padding:1px 5px;border-radius:4px">' + p.codigo_fabricante + '</code>' : '<span class="text-muted">—</span>') + '</td>' +
         '<td style="max-width:180px">' + p.descricao + '</td>' +
         '<td style="text-align:center">' + p.quantidade + '</td>' +
         '<td>' + Fmt.moeda(p.preco_unitario) + '</td>' +
@@ -214,7 +210,7 @@ const PageDetalheOS = {
         this.badgeStatus(p.status_entrega) +
         '<span style="font-size:9px;color:var(--text-4);margin-left:3px">▼</span></div>' +
         '<div id="status-menu-' + p.id + '" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);min-width:160px;padding:4px 0">' +
-        ['Aguardando Triagem','Separado (Almoxarifado)','Pendente','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(s =>
+        ['Pendente','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(s =>
           '<div onclick="PageDetalheOS.atualizarStatusPeca(' + p.id + ',\'' + s + '\')" style="padding:7px 12px;cursor:pointer;font-size:12px" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
           this.badgeStatus(s) + '</div>'
         ).join('') +
@@ -303,7 +299,6 @@ const PageDetalheOS = {
       document.getElementById('peca-data-prev').value    = peca.data_entrega_prevista?.split('T')[0]||'';
       document.getElementById('peca-rastreio').value     = peca.numero_rastreio||'';
       document.getElementById('peca-obs').value          = peca.observacoes||'';
-      document.getElementById('peca-cod-fab').value      = peca.codigo_fabricante||'';
     } else {
       document.getElementById('form-peca').reset();
       document.getElementById('peca-fornecedor-wrap').innerHTML =
@@ -337,8 +332,7 @@ const PageDetalheOS = {
       status_entrega:       document.getElementById('peca-status').value,
       data_entrega_prevista:document.getElementById('peca-data-prev').value||null,
       numero_rastreio:      document.getElementById('peca-rastreio').value.trim()||null,
-      observacoes:          document.getElementById('peca-obs').value.trim()||null,
-      codigo_fabricante:    document.getElementById('peca-cod-fab')?.value?.trim()||null
+      observacoes:          document.getElementById('peca-obs').value.trim()||null
     };
     if (!payload.descricao) { App.toast('Descrição é obrigatória','error'); return; }
     try {
@@ -577,7 +571,6 @@ const PageDetalheOS = {
       '<div class="form-group"><label class="form-label">Preço Cotado</label><input id="peca-preco-cotado" class="form-input" type="number" step="0.01"></div>' +
       '<div class="form-group"><label class="form-label">Valor Fechado</label><input id="peca-preco-fechado" class="form-input" type="number" step="0.01"></div>' +
       '<div class="form-group form-full"><label class="form-label">Fornecedor</label><div id="peca-fornecedor-wrap"><input type="hidden" id="peca-fornecedor" value=""></div></div>' +
-      '<div class="form-group"><label class="form-label">Cód. Fabricante</label><input id="peca-cod-fab" class="form-input" placeholder="Ex: KA600-030TB"></div>' +
       // Transporte com datalist (digita e salva histórico)
       '<div class="form-group"><label class="form-label">Transportadora</label>' +
       '<input id="peca-transporte" class="form-input" list="transportes-list" placeholder="Ex: RODONAVES, SEDEX...">' +

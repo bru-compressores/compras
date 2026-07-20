@@ -53,41 +53,26 @@ const PageBackup = {
 
   async restaurar() {
     const file = document.getElementById('backup-file').files[0]; if (!file) return;
-    if (!App.confirm('Confirma a restauração? Os dados do backup serão adicionados ao banco atual. O processamento roda em segundo plano e pode levar alguns minutos.')) return;
-    document.getElementById('backup-resultado').innerHTML = '<div class="alert alert-warning">Enviando arquivo…</div>';
+    if (!App.confirm('Confirma a restauração? Os dados do backup serão adicionados ao banco atual.')) return;
+    document.getElementById('backup-resultado').innerHTML = '<div class="alert alert-warning">Restaurando…</div>';
     document.getElementById('btn-restaurar').disabled = true;
     try {
       const text  = await file.text();
       const dados = JSON.parse(text);
-      const totalRegistros = (dados.ordens_servico?.length||0) + (dados.pecas_os?.length||0) + (dados.fornecedores?.length||0);
-
-      const resp = await fetch('/api/backup/restaurar', {
+      const resp  = await fetch('/api/backup/restaurar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Api.token },
         body: JSON.stringify(dados)
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data.erro || 'Erro ao iniciar restauração');
-
+      if (!resp.ok) throw new Error(data.erro);
       document.getElementById('backup-resultado').innerHTML =
-        '<div class="alert alert-success">✅ ' + data.mensagem + '</div>' +
-        '<div style="margin-top:8px;font-size:11px;color:var(--text-3)">Total no arquivo: ' + totalRegistros + ' registros. ' +
-        '<button class="btn btn-secondary btn-sm" style="margin-left:6px" onclick="PageBackup.verificarStatus()">Verificar progresso</button></div>';
-      App.toast('Restauração iniciada em segundo plano!', 'success');
+        '<div class="alert alert-success">✅ ' + data.mensagem +
+        (data.erros?.length ? '<br><small>⚠️ ' + data.erros.slice(0,3).join(', ') + '</small>' : '') + '</div>';
+      App.toast('Backup restaurado!', 'success');
     } catch(e) {
       document.getElementById('backup-resultado').innerHTML = '<div class="alert alert-danger">❌ ' + e.message + '</div>';
     }
     document.getElementById('btn-restaurar').disabled = false;
-  },
-
-  async verificarStatus() {
-    try {
-      const status = await Api.get('/backup/status');
-      document.getElementById('backup-resultado').innerHTML +=
-        '<div style="margin-top:8px;padding:10px;background:var(--surface-2);border-radius:var(--radius);font-size:12px">' +
-        '📊 No banco agora: <strong>' + status.ordens_servico + '</strong> O.S. · ' +
-        '<strong>' + status.pecas_os + '</strong> peças · ' +
-        '<strong>' + status.fornecedores + '</strong> fornecedores</div>';
-    } catch(e) { App.toast(e.message, 'error'); }
   }
 };

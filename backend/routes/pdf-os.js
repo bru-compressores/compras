@@ -4,17 +4,16 @@ const { autenticar } = require('../middleware/auth');
 const router = express.Router();
 router.use(autenticar);
 
-router.get('/:id', async (req, res) => {
-  try {
-    const db = getDB();
-    const os = await Promise.resolve(db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(req.params.id));
-    if (!os) return res.status(404).json({ erro: 'O.S. não encontrada' });
+router.get('/:id', (req, res) => {
+  const db = getDB();
+  const os = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(req.params.id);
+  if (!os) return res.status(404).json({ erro: 'O.S. não encontrada' });
 
-    const pecas = await Promise.resolve(db.prepare(`
-      SELECT p.*, f.nome as fornecedor_nome
-      FROM pecas_os p LEFT JOIN fornecedores f ON p.fornecedor_id = f.id
-      WHERE p.os_id = ? ORDER BY p.criado_em
-    `).all(req.params.id));
+  const pecas = db.prepare(`
+    SELECT p.*, f.nome as fornecedor_nome
+    FROM pecas_os p LEFT JOIN fornecedores f ON p.fornecedor_id = f.id
+    WHERE p.os_id = ? ORDER BY p.criado_em
+  `).all(req.params.id);
 
   const fmt = d => {
     if (!d) return '—';
@@ -118,7 +117,7 @@ router.get('/:id', async (req, res) => {
   <div class="section-title">Peças (${pecas.length})</div>
   <table>
     <thead><tr>
-      <th>Código</th><th>Cód. Fabricante</th><th>Descrição</th><th>Qtd</th>
+      <th>Código</th><th>Descrição</th><th>Qtd</th>
       <th>Preço Venda</th><th>Valor Fechado</th><th>Markup</th>
       <th>Fornecedor</th><th>Transportadora</th><th>Status</th>
       <th>Prev. Entrega</th><th>Rastreio</th>
@@ -126,7 +125,6 @@ router.get('/:id', async (req, res) => {
     <tbody>
       ${pecas.map(p => `<tr>
         <td><code style="background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:10px">${p.codigo||'—'}</code></td>
-        <td><code style="background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:10px">${p.codigo_fabricante||'—'}</code></td>
         <td style="max-width:180px">${p.descricao}</td>
         <td style="text-align:center">${p.quantidade}</td>
         <td>${moeda(p.preco_unitario)}</td>
@@ -154,9 +152,6 @@ router.get('/:id', async (req, res) => {
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
-  } catch(e) {
-    res.status(500).send('Erro ao gerar PDF: ' + e.message);
-  }
 });
 
 module.exports = router;

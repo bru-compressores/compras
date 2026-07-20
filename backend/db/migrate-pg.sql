@@ -92,6 +92,3 @@ CREATE TABLE IF NOT EXISTS comentarios_peca (
 INSERT INTO usuarios (nome, email, senha_hash, papel)
 VALUES ('Administrador', 'admin@empresa.com', '$2a$10$rOzJqnvZoTz6nKxFvnLZKO1n7MHt1.h.q3.K/5WpVGQjXFJx6P9Qm', 'admin')
 ON CONFLICT (email) DO NOTHING;
-
--- Adicionar código do fabricante (rodar no Supabase SQL Editor se já existir banco)
-ALTER TABLE pecas_os ADD COLUMN IF NOT EXISTS codigo_fabricante TEXT;
