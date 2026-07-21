@@ -214,7 +214,7 @@ const PageDetalheOS = {
         '<div onclick="PageDetalheOS.toggleStatusMenu(event,' + p.id + ')" style="cursor:pointer">' +
         this.badgeStatus(p.status_entrega) +
         '<span style="font-size:9px;color:var(--text-4);margin-left:3px">▼</span></div>' +
-        '<div id="status-menu-' + p.id + '" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);min-width:160px;padding:4px 0">' +
+        '<div id="status-menu-' + p.id + '" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 20px rgba(0,0,0,.15);min-width:180px;padding:4px 0">' +
         ['Pendente','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(s =>
           '<div onclick="PageDetalheOS.atualizarStatusPeca(' + p.id + ',\'' + s + '\')" style="padding:7px 12px;cursor:pointer;font-size:12px" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
           this.badgeStatus(s) + '</div>'
@@ -245,9 +245,24 @@ const PageDetalheOS = {
       if (m.id !== 'status-menu-' + id) m.style.display = 'none';
     });
     const menu = document.getElementById('status-menu-' + id);
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-    // Fecha ao clicar fora
-    if (menu.style.display === 'block') {
+    const isOpen = menu.style.display === 'block';
+    menu.style.display = isOpen ? 'none' : 'block';
+
+    if (!isOpen) {
+      // Posiciona usando coordenadas fixas da tela (evita overflow/clip)
+      const btn = e.currentTarget;
+      const rect = btn.getBoundingClientRect();
+      const menuH = 220; // altura estimada do menu
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      menu.style.left = rect.left + 'px';
+      // Abre para cima se não houver espaço abaixo
+      if (spaceBelow < menuH) {
+        menu.style.top = (rect.top - menuH) + 'px';
+      } else {
+        menu.style.top = rect.bottom + 'px';
+      }
+
       setTimeout(() => {
         document.addEventListener('click', function close() {
           menu.style.display = 'none';
