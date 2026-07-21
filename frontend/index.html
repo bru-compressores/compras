@@ -47,11 +47,17 @@
       <button class="nav-item" onclick="App.navigate('ordens')" data-page="ordens">
         <span class="nav-icon ic-os">📋</span>O.S. / Pedidos de Peças
       </button>
+      <button class="nav-item" onclick="App.navigate('triagem')" data-page="triagem">
+        <span class="nav-icon" style="background:linear-gradient(135deg,#eab308,#ca8a04)">🔍</span>Triagem
+      </button>
       <button class="nav-item" onclick="App.navigate('kanban')" data-page="kanban">
         <span class="nav-icon" style="background:linear-gradient(135deg,#f97316,#ea580c)">⊟</span>Kanban
       </button>
       <button class="nav-item" onclick="App.navigate('rastreamento')" data-page="rastreamento">
         <span class="nav-icon ic-rast">🕐</span>Rastreamento de Peças
+      </button>
+      <button class="nav-item" onclick="App.navigate('saving')" data-page="saving">
+        <span class="nav-icon" style="background:linear-gradient(135deg,#16a34a,#15803d)">💰</span>Saving
       </button>
       <div class="nav-section">Cadastros</div>
       <button class="nav-item" onclick="App.navigate('fornecedores')" data-page="fornecedores">
@@ -60,9 +66,6 @@
       <div class="nav-section" id="nav-admin-section">Sistema</div>
       <button class="nav-item" onclick="App.navigate('relatorios')" data-page="relatorios">
         <span class="nav-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">📈</span>Relatórios
-      </button>
-      <button class="nav-item" onclick="App.navigate('saving')" data-page="saving">
-        <span class="nav-icon" style="background:linear-gradient(135deg,#16a34a,#15803d)">💰</span>Saving
       </button>
       <button class="nav-item nav-admin" onclick="App.navigate('importar')" data-page="importar">
         <span class="nav-icon ic-imp">⬆</span>Importar
@@ -111,6 +114,7 @@
 <script src="/assets/js/pages/backup.js"></script>
 <script src="/assets/js/pages/relatorios.js"></script>
 <script src="/assets/js/pages/saving.js"></script>
+<script src="/assets/js/pages/triagem.js"></script>
 <script src="/assets/js/pages/kanban.js"></script>
 <script src="/assets/js/pages/importar2.js"></script>
 <script src="/assets/js/app.js"></script>
