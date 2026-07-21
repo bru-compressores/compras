@@ -338,11 +338,16 @@ const PageOrdens = {
   async definirTipoImportados() {
     const tipo = document.getElementById('import-pdf-tipo-select').value;
     const numeros = JSON.parse(document.getElementById('import-pdf-os-ids').value || '[]');
+    let atualizados = 0;
     for (const numero of numeros) {
-      try { await Api.put(`/os/${numero}`, { tipo }); } catch {}
+      try {
+        // Busca a OS pelo número para pegar o ID real
+        const data = await Api.get('/os?busca=' + encodeURIComponent(numero) + '&limite=5');
+        const os = data.registros?.find(o => o.numero_os === String(numero));
+        if (os) { await Api.put('/os/' + os.id, { tipo }); atualizados++; }
+      } catch(e) {}
     }
-    // Busca IDs reais pelo numero_os
-    App.toast(`Tipo "${tipo}" aplicado a ${numeros.length} O.S.`, 'success');
+    App.toast('Tipo "' + tipo + '" aplicado a ' + atualizados + ' O.S.', 'success');
     document.getElementById('import-pdf-tipo').classList.add('hidden');
     await this.carregar();
   },
