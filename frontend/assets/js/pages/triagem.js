@@ -16,6 +16,13 @@ const PageTriagem = {
   },
 
   renderLista() {
+    // Atualiza badge do menu
+    const badge = document.getElementById('triagem-badge');
+    if (badge) {
+      const total = this.lista.reduce((s, os) => s + (os.pendentes_triagem||0), 0);
+      if (total > 0) { badge.textContent = total; badge.style.display = 'inline-block'; }
+      else badge.style.display = 'none';
+    }
     if (!this.lista.length) {
       document.getElementById('content').innerHTML =
         '<div class="empty-state"><p>✅ Nenhuma O.S. aguardando triagem do almoxarifado!</p></div>';

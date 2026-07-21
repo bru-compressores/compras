@@ -194,7 +194,12 @@ const PageDetalheOS = {
         ? '<span style="background:' + mk.bg + ';color:' + mk.cor + ';padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">' + mk.label + ' ' + mk.mk + '</span>'
         : '<span class="text-muted">—</span>';
 
-      return '<tr onclick="PageDetalheOS.editarPecaInline(' + p.id + ')" style="cursor:pointer">' +
+      const bgLinha = p.status_entrega === 'Separado (Almoxarifado)'
+        ? ';background:#f0fdf4;border-left:3px solid #16a34a'
+        : p.status_entrega === 'Aguardando Triagem'
+        ? ';background:#fffbeb;border-left:3px solid #eab308'
+        : '';
+      return '<tr onclick="PageDetalheOS.editarPecaInline(' + p.id + ')" style="cursor:pointer' + bgLinha + '">' +
         '<td>' + (p.codigo||'<span class="text-muted">—</span>') + '</td>' +
         '<td style="max-width:180px">' + p.descricao + '</td>' +
         '<td style="text-align:center">' + p.quantidade + '</td>' +

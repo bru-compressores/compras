@@ -305,3 +305,13 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after { content: ' ⇅'; }
 }
 .kanban-card.dragging { opacity: .4; }
 .kanban-col.drag-over { outline: 2px dashed var(--brand2); }
+
+/* ─── Badge de notificação no menu ──────────────────────────────────────── */
+.nav-item { display: flex; align-items: center; }
+#triagem-badge {
+  animation: pulse-badge 2s infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .7; }
+}
