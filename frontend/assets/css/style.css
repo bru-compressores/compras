@@ -315,3 +315,4 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after { content: ' ⇅'; }
   0%, 100% { opacity: 1; }
   50% { opacity: .7; }
 }
+.badge-cotacao { background: #ede9fe; color: #7c3aed; }

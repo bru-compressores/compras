@@ -36,6 +36,7 @@ const PageDetalheOS = {
   // Badge colorido para status de entrega
   badgeStatus(s) {
     const map = {
+      'Em cotação':       { bg:'#ede9fe', cor:'#7c3aed', dot:'#7c3aed' },
       'Pendente':         { bg:'#f1f5f9', cor:'#64748b', dot:'#94a3b8' },
       'Pedido realizado': { bg:'#eff6ff', cor:'#1a56db', dot:'#1a56db' },
       'Em trânsito':      { bg:'#fffbeb', cor:'#d97706', dot:'#d97706' },
@@ -597,7 +598,7 @@ const PageDetalheOS = {
       '<datalist id="transportes-list"></datalist>' +
       '<span class="form-hint">Digite ou escolha uma já usada</span></div>' +
       '<div class="form-group"><label class="form-label">Status de entrega</label><select id="peca-status" class="form-select">' +
-      '<option>Pendente</option><option>Pedido realizado</option><option>Em trânsito</option><option>Entregue</option><option>Cancelado</option>' +
+      '<option>Aguardando Triagem</option><option>Separado (Almoxarifado)</option><option>Pendente</option><option>Em cotação</option><option>Pedido realizado</option><option>Em trânsito</option><option>Entregue</option><option>Cancelado</option>' +
       '</select></div>' +
       '<div class="form-group"><label class="form-label">Data prevista de entrega</label><input id="peca-data-prev" class="form-input" type="date"></div>' +
       '<div class="form-group"><label class="form-label">Número de rastreio</label><input id="peca-rastreio" class="form-input" placeholder="BR0000000000AA"></div>' +
