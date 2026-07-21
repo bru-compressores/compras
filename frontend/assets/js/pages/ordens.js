@@ -96,10 +96,14 @@ const PageOrdens = {
     return this.renderTabelaInPlace(data);
   },
 
+  _selecionados: new Set(),
+
   renderTabelaInPlace(data) {
     const { headers, dadosOrdenados } = TableSort.init('os-table', this._colsOS, data.registros, null, null);
     const rows = dadosOrdenados.map(os =>
       '<tr onclick="App.navigate(\'detalhe-os\',{id:' + os.id + '})" style="cursor:pointer">' +
+      '<td onclick="event.stopPropagation()" style="width:36px;text-align:center">' +
+      '<input type="checkbox" class="os-checkbox" data-id="' + os.id + '" ' + (this._selecionados.has(os.id)?'checked':'') + ' onchange="PageOrdens.toggleSelecao(' + os.id + ',this.checked)" style="width:16px;height:16px;cursor:pointer"></td>' +
       '<td><strong>' + os.numero_os + '</strong> <span class="badge ' + (os.tipo==='Pedido'?'badge-pedido':'badge-separadas') + '" style="font-size:9px">' + (os.tipo||'OS') + '</span></td>' +
       '<td>' + os.cliente + '</td>' +
       '<td class="text-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + os.equipamento + '</td>' +
@@ -115,10 +119,80 @@ const PageOrdens = {
       ? '<div class="pagination"><span class="page-info">' + data.total + ' registros</span>' +
         Array.from({length:totalPags},(_,i)=>i+1).map(p=>'<button class="page-btn ' + (p===data.pagina?'active':'') + '" onclick="PageOrdens.irPagina(' + p + ')">' + p + '</button>').join('') + '</div>'
       : '<div class="page-info" style="text-align:right;padding-top:8px">' + data.total + ' registros</div>';
-    const html = '<div class="table-wrap"><table><thead><tr>' + headers + '</tr></thead><tbody>' + rows + '</tbody></table></div>' + pag;
+
+    // Header com checkbox selecionar todos
+    const thCheckbox = '<th style="width:36px;text-align:center"><input type="checkbox" id="check-todos" onchange="PageOrdens.selecionarTodos(this.checked)" style="width:16px;height:16px;cursor:pointer" title="Selecionar todos"></th>';
+    const html = '<div class="table-wrap"><table><thead><tr>' + thCheckbox + headers + '</tr></thead><tbody>' + rows + '</tbody></table></div>' + pag;
     const el = document.getElementById('tabela-os');
     if (el) el.innerHTML = html;
+
+    // Barra de ações em lote
+    this.atualizarBarraLote();
     return html;
+  },
+
+  toggleSelecao(id, checked) {
+    if (checked) this._selecionados.add(id);
+    else this._selecionados.delete(id);
+    this.atualizarBarraLote();
+  },
+
+  selecionarTodos(checked) {
+    document.querySelectorAll('.os-checkbox').forEach(cb => {
+      const id = parseInt(cb.dataset.id);
+      cb.checked = checked;
+      if (checked) this._selecionados.add(id);
+      else this._selecionados.delete(id);
+    });
+    this.atualizarBarraLote();
+  },
+
+  atualizarBarraLote() {
+    let barra = document.getElementById('barra-lote');
+    if (!barra) {
+      barra = document.createElement('div');
+      barra.id = 'barra-lote';
+      const tabela = document.getElementById('tabela-os');
+      if (tabela) tabela.parentNode.insertBefore(barra, tabela);
+    }
+    const n = this._selecionados.size;
+    if (n === 0) {
+      barra.innerHTML = '';
+      return;
+    }
+    barra.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius-lg);margin-bottom:10px">' +
+      '<span style="font-size:13px;font-weight:600;color:#dc2626">' + n + ' O.S. selecionada(s)</span>' +
+      '<button class="btn btn-danger btn-sm" onclick="PageOrdens.excluirLote()">🗑 Excluir selecionadas</button>' +
+      '<button class="btn btn-secondary btn-sm" onclick="PageOrdens.limparSelecao()">✕ Cancelar seleção</button>' +
+      '</div>';
+  },
+
+  limparSelecao() {
+    this._selecionados.clear();
+    document.querySelectorAll('.os-checkbox').forEach(cb => cb.checked = false);
+    const chkTodos = document.getElementById('check-todos');
+    if (chkTodos) chkTodos.checked = false;
+    this.atualizarBarraLote();
+  },
+
+  async excluirLote() {
+    const ids = [...this._selecionados];
+    if (!ids.length) return;
+    if (!App.confirm('Excluir ' + ids.length + ' O.S. selecionada(s)? Esta ação não pode ser desfeita.')) return;
+    let erros = 0;
+    for (const id of ids) {
+      try { await Api.delete('/os/' + id); }
+      catch(e) { erros++; }
+    }
+    this._selecionados.clear();
+    App.toast(
+      erros === 0
+        ? ids.length + ' O.S. excluída(s) com sucesso!'
+        : (ids.length - erros) + ' excluída(s), ' + erros + ' com erro.',
+      erros === 0 ? 'success' : 'error'
+    );
+    this.carregar();
   },
 
   irPagina(p) { this.filtros.pagina = p; this.carregar(); },
