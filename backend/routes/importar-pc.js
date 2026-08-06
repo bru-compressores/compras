@@ -151,6 +151,9 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
         `SELECT id, numero_os FROM ordens_servico WHERE observacoes LIKE ? OR numero_os = ?`
       ).all(`%${pc.requisicao_almox}%`, pc.requisicao_almox));
 
+      console.log(`PC ${pc.numero_pc} | Req: ${pc.requisicao_almox} | OS encontradas: ${osLista.length} | Itens: ${pc.itens.length}`);
+      pc.itens.forEach(i => console.log(`  Item: cod=${i.codigo} ref=${i.referencia} R$${i.preco_fechado}`));
+
       // Buscar fornecedor pelo nome
       let fornecedorId = null;
       if (pc.fornecedor_nome) {
@@ -158,6 +161,7 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
           `SELECT id FROM fornecedores WHERE nome ILIKE ?`
         ).get(`%${pc.fornecedor_nome.substring(0, 20)}%`));
         if (forn) fornecedorId = forn.id;
+        console.log(`  Fornecedor: ${pc.fornecedor_nome} -> id=${fornecedorId}`);
       }
 
       let pecasAtualizadas = 0, pecasNaoEncontradas = 0;
@@ -166,7 +170,6 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
       for (const item of pc.itens) {
         if (!item.codigo) { pecasNaoEncontradas++; continue; }
 
-        // Buscar peça pelo código em qualquer O.S. relacionada à requisição
         let peca = null;
 
         // 1. Tenta nas O.S. vinculadas à requisição
@@ -174,18 +177,19 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
           peca = await Promise.resolve(db.prepare(
             `SELECT id FROM pecas_os WHERE os_id = ? AND codigo = ? LIMIT 1`
           ).get(os.id, item.codigo));
-          if (peca) break;
+          if (peca) { console.log(`  ✅ Encontrou cod=${item.codigo} na OS ${os.numero_os}`); break; }
         }
 
-        // 2. Fallback: busca global pelo código
+        // 2. Fallback global — busca pelo código sem restrição de status
         if (!peca) {
           peca = await Promise.resolve(db.prepare(
             `SELECT p.id FROM pecas_os p
              JOIN ordens_servico o ON p.os_id = o.id
              WHERE p.codigo = ?
-             AND p.status_entrega IN ('Pendente','Em cotação','Aguardando Triagem')
              ORDER BY p.criado_em DESC LIMIT 1`
           ).get(item.codigo));
+          if (peca) console.log(`  ✅ Fallback global: cod=${item.codigo}`);
+          else console.log(`  ❌ Não encontrou cod=${item.codigo}`)
         }
 
         if (!peca) { pecasNaoEncontradas++; continue; }
