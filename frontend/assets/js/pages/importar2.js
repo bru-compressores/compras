@@ -143,6 +143,51 @@ const PageImportar = {
     document.getElementById('import-status').textContent = '';
   },
 
+  pcSelecionado(files) {
+    const lista = document.getElementById('pc-lista');
+    const btn   = document.getElementById('btn-importar-pc');
+    if (!files.length) { lista.innerHTML = ''; btn.disabled = true; return; }
+    this._pcFiles = files;
+    lista.innerHTML =
+      '<div style="font-size:11px;color:var(--text-3);margin-top:4px">' +
+      Array.from(files).map(f => '📄 ' + f.name).join('<br>') +
+      '</div>';
+    btn.disabled = false;
+  },
+
+  async importarPC() {
+    const files = this._pcFiles;
+    if (!files?.length) return;
+    document.getElementById('pc-resultado').innerHTML = '<div class="alert alert-warning">Importando Pedidos de Compra…</div>';
+    document.getElementById('btn-importar-pc').disabled = true;
+    try {
+      const fd = new FormData();
+      Array.from(files).forEach(f => fd.append('arquivos', f));
+      const resp = await fetch('/api/importar-pc', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Api.token },
+        body: fd
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro);
+      const ok  = data.resultados.filter(r => r.sucesso);
+      const err = data.resultados.filter(r => !r.sucesso);
+      document.getElementById('pc-resultado').innerHTML =
+        (ok.length ? '<div class="alert alert-success" style="margin-bottom:6px">' +
+          ok.map(r =>
+            '✅ PC ' + r.numero_pc + ' — Req. ' + r.requisicao + ' — ' +
+            r.pecas_atualizadas + ' peça(s) atualizada(s)' +
+            (r.os_vinculadas?.length ? ' — O.S.: ' + r.os_vinculadas.join(', ') : '') +
+            (r.pecas_nao_encontradas > 0 ? '<br><small>⚠️ ' + r.pecas_nao_encontradas + ' item(ns) não localizado(s)</small>' : '')
+          ).join('<br>') + '</div>' : '') +
+        (err.length ? '<div class="alert alert-danger">' + err.map(r => r.arquivo + ': ' + r.erro).join('<br>') + '</div>' : '');
+      App.toast('Pedidos de Compra importados!', 'success');
+    } catch(e) {
+      document.getElementById('pc-resultado').innerHTML = '<div class="alert alert-danger">❌ ' + e.message + '</div>';
+    }
+    document.getElementById('btn-importar-pc').disabled = false;
+  },
+
   excelSelecionado(input) {
     if (input.files[0]) {
       document.getElementById('excel-nome').textContent = input.files[0].name;

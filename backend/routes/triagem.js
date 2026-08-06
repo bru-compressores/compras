@@ -41,6 +41,8 @@ router.post('/:os_id/finalizar', async (req, res) => {
   try {
     const db = getDB();
     await qr(db, `UPDATE pecas_os SET status_entrega='Pendente', atualizado_em=NOW() WHERE os_id=? AND status_entrega='Aguardando Triagem'`, req.params.os_id);
+    // Marca data de conclusão da triagem
+    await qr(db, 'UPDATE ordens_servico SET data_triagem_concluida=NOW() WHERE id=?', req.params.os_id);
     res.json({ mensagem: 'Triagem finalizada' });
   } catch(e) { res.status(500).json({ erro: e.message }); }
 });

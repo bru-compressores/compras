@@ -92,3 +92,10 @@ CREATE TABLE IF NOT EXISTS comentarios_peca (
 INSERT INTO usuarios (nome, email, senha_hash, papel)
 VALUES ('Administrador', 'admin@empresa.com', '$2a$10$rOzJqnvZoTz6nKxFvnLZKO1n7MHt1.h.q3.K/5WpVGQjXFJx6P9Qm', 'admin')
 ON CONFLICT (email) DO NOTHING;
+
+-- Datas de ciclo da O.S. para cálculo de lead times
+ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_entrada_compras TIMESTAMP;
+ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_triagem_concluida TIMESTAMP;
+ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_primeiro_pedido TIMESTAMP;
+ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_todas_pedidas TIMESTAMP;
+ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_entrega_completa TIMESTAMP;

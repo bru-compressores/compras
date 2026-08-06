@@ -58,24 +58,41 @@ router.put('/:id', async (req, res) => {
           const todasPecas = await qa(db, 'SELECT status_entrega FROM pecas_os WHERE os_id = ?', osId);
           const ativas = todasPecas.filter(p => !['Separado (Almoxarifado)', 'Cancelado', 'Aguardando Triagem'].includes(p.status_entrega));
 
-          // Todas pedidas (Pedido realizado, Em trânsito, Entregue, Em cotação) → Aguardando peças
-          const todasPedidas = ativas.length > 0 && ativas.every(p =>
-            ['Pedido realizado', 'Em trânsito', 'Entregue', 'Em cotação'].includes(p.status_entrega)
-          );
-          // Todas entregues → Peças separadas
-          const todasEntregues = ativas.length > 0 && ativas.every(p => p.status_entrega === 'Entregue');
+          // Só avança se tiver peças ativas para comprar
+          if (ativas.length === 0) {
+            // Nenhuma peça para comprar — não avança automaticamente
+          } else {
+            // Todas pedidas (Pedido realizado, Em trânsito, Entregue, Em cotação) → Aguardando peças
+            const todasPedidas = ativas.every(p =>
+              ['Pedido realizado', 'Em trânsito', 'Entregue', 'Em cotação'].includes(p.status_entrega)
+            );
+            // Todas entregues → Peças separadas
+            const todasEntregues = ativas.every(p => p.status_entrega === 'Entregue');
 
-          let novoStatusOS = null;
-          if (todasEntregues && os.status === 'Aguardando peças') {
-            novoStatusOS = 'Peças separadas';
-          } else if (todasPedidas && os.status === 'Aberta') {
-            novoStatusOS = 'Aguardando peças';
-          }
+            let novoStatusOS = null;
+            if (todasEntregues && os.status === 'Aguardando peças') {
+              novoStatusOS = 'Peças separadas';
+            } else if (todasPedidas && os.status === 'Aberta') {
+              novoStatusOS = 'Aguardando peças';
+            }
 
-          if (novoStatusOS) {
-            await qr(db, 'UPDATE ordens_servico SET status=?, atualizado_em=NOW() WHERE id=?', novoStatusOS, osId);
-            await qr(db, 'INSERT INTO historico_status (os_id,status_anterior,status_novo,observacao,usuario_id) VALUES (?,?,?,?,?)',
-              osId, os.status, novoStatusOS, 'Avanço automático pelo status das peças', req.usuario?.id || null);
+            if (novoStatusOS) {
+              // Captura datas de lead time automaticamente
+              let campoData = '';
+              if (novoStatusOS === 'Aguardando peças') campoData = ', data_todas_pedidas=NOW()';
+              if (novoStatusOS === 'Peças separadas')  campoData = ', data_entrega_completa=NOW()';
+              await qr(db, `UPDATE ordens_servico SET status=?, atualizado_em=NOW()${campoData} WHERE id=?`, novoStatusOS, osId);
+              await qr(db, 'INSERT INTO historico_status (os_id,status_anterior,status_novo,observacao,usuario_id) VALUES (?,?,?,?,?)',
+                osId, os.status, novoStatusOS, 'Avanço automático pelo status das peças', req.usuario?.id || null);
+            }
+
+            // Captura data do primeiro pedido realizado
+            if (status_entrega === 'Pedido realizado') {
+              const jaTemPedido = await q(db, 'SELECT data_primeiro_pedido FROM ordens_servico WHERE id = ? AND data_primeiro_pedido IS NULL', osId);
+              if (jaTemPedido) {
+                await qr(db, 'UPDATE ordens_servico SET data_primeiro_pedido=NOW() WHERE id=?', osId);
+              }
+            }
           }
         }
       } catch(eAuto) { /* não bloqueia a resposta por erro no avanço automático */ }

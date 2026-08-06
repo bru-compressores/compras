@@ -190,6 +190,8 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
         osId = novaOS.id;
         await Promise.resolve(db.prepare('INSERT INTO historico_status (os_id,status_anterior,status_novo,observacao,usuario_id) VALUES (?,?,?,?,?)')
           .run(osId, null, 'Aberta', 'Importado via PDF: ' + nome, req.usuario.id));
+        // Marca data de entrada em compras
+        await Promise.resolve(db.prepare('UPDATE ordens_servico SET data_entrada_compras=NOW() WHERE id=?').run(osId));
       }
 
       const jaTemRow = await Promise.resolve(db.prepare('SELECT COUNT(*) as total FROM pecas_os WHERE os_id = ?').get(osId));

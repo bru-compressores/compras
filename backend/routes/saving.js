@@ -84,3 +84,41 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+
+// GET /api/saving/lead-times
+router.get('/lead-times', async (req, res) => {
+  try {
+    const db = getDB();
+    const qa = (sql, ...p) => Promise.resolve(db.prepare(sql).all(...p));
+    const q  = (sql, ...p) => Promise.resolve(db.prepare(sql).get(...p));
+
+    // Lead times médios por período
+    const medias = await q(db, `
+      SELECT
+        COUNT(*) as total_os,
+        ROUND(AVG(EXTRACT(EPOCH FROM (data_entrada_compras - criado_em))/3600/24), 1) as lt_primam_compras,
+        ROUND(AVG(EXTRACT(EPOCH FROM (data_triagem_concluida - data_entrada_compras))/3600/24), 1) as lt_triagem,
+        ROUND(AVG(EXTRACT(EPOCH FROM (data_primeiro_pedido - data_triagem_concluida))/3600/24), 1) as lt_cotacao,
+        ROUND(AVG(EXTRACT(EPOCH FROM (data_todas_pedidas - data_primeiro_pedido))/3600/24), 1) as lt_pedido,
+        ROUND(AVG(EXTRACT(EPOCH FROM (data_entrega_completa - data_todas_pedidas))/3600/24), 1) as lt_entrega,
+        ROUND(AVG(EXTRACT(EPOCH FROM (data_entrega_completa - data_entrada_compras))/3600/24), 1) as lt_total
+      FROM ordens_servico
+      WHERE data_entrada_compras IS NOT NULL
+    `);
+
+    // Últimas OS com lead times calculados
+    const historico = await qa(db, `
+      SELECT
+        numero_os, cliente, status,
+        data_entrada_compras, data_triagem_concluida,
+        data_primeiro_pedido, data_todas_pedidas, data_entrega_completa,
+        ROUND(EXTRACT(EPOCH FROM (data_entrega_completa - data_entrada_compras))/3600/24, 0) as lt_total_dias
+      FROM ordens_servico
+      WHERE data_entrada_compras IS NOT NULL
+      ORDER BY data_entrada_compras DESC
+      LIMIT 20
+    `);
+
+    res.json({ medias, historico });
+  } catch(e) { res.status(500).json({ erro: e.message }); }
+});

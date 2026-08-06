@@ -66,6 +66,7 @@ initDB().then(async db => {
   app.use('/api/comentarios',   require('./routes/comentarios'));
   app.use('/api/triagem',       require('./routes/triagem'));
   app.use('/api/saving',         require('./routes/saving'));
+  app.use('/api/importar-pc',    require('./routes/importar-pc'));
   app.use('/api',               require('./routes/dashboard'));
 
   app.get('*', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html')));
