@@ -48,7 +48,7 @@ const PageRelatorios = {
         '<thead><tr><th>Fornecedor</th><th>Peças</th><th>Venda</th><th>Fechado</th><th>Economia</th><th>Markup</th></tr></thead>' +
         '<tbody>' + porFornecedor.map(f => {
           const eco = (f.total_venda||0) - (f.total_fechado||0);
-          const mk  = f.markup_medio ? f.markup_medio.toFixed(2)+'x' : '—';
+          const mk  = f.markup_medio ? parseFloat(f.markup_medio).toFixed(2)+'x' : '—';
           return '<tr>' +
             '<td><strong>' + f.fornecedor + '</strong></td>' +
             '<td style="text-align:center">' + f.total_pecas + '</td>' +

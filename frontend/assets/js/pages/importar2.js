@@ -53,6 +53,21 @@ const PageImportar = {
       '<button class="btn btn-primary" id="btn-excel" onclick="PageImportar.importarExcel()" disabled>Importar Fornecedores</button>' +
       '</div>' +
 
+      // ── Pedido de Compra PDF ──────────────────────────────────────────────
+      '<div class="card">' +
+      '<div class="card-header"><div><div class="card-title">🧾 Importar Pedido de Compra — PDF</div>' +
+      '<div class="card-subtitle">Preenche automaticamente valor fechado, data de entrega, fornecedor e status</div></div></div>' +
+      '<p style="font-size:12px;color:var(--text-2);margin-bottom:14px">Selecione os PDFs de Pedido de Compra gerados pelo Primam. O sistema vincula às peças via <strong>código + nº da requisição</strong> e muda o status para <strong>Pedido realizado</strong> automaticamente.</p>' +
+      '<div style="background:var(--surface-2);border:2px dashed var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;margin-bottom:14px">' +
+      '<div style="font-size:28px;margin-bottom:8px">🧾</div>' +
+      '<input type="file" id="pc-input" accept=".pdf" multiple style="display:none" onchange="PageImportar.pcSelecionado(this.files)">' +
+      '<button class="btn btn-secondary" onclick="document.getElementById(\'pc-input\').click()">Selecionar PDFs de PC</button>' +
+      '<div id="pc-lista" style="margin-top:10px;font-size:11px;color:var(--text-3)"></div>' +
+      '</div>' +
+      '<div id="pc-resultado" style="margin-bottom:10px"></div>' +
+      '<button class="btn btn-primary" id="btn-importar-pc" onclick="PageImportar.importarPC()" disabled>Importar Pedidos de Compra</button>' +
+      '</div>' +
+
       '</div>';
   },
 

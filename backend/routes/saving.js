@@ -92,8 +92,7 @@ router.get('/lead-times', async (req, res) => {
     const qa = (sql, ...p) => Promise.resolve(db.prepare(sql).all(...p));
     const q  = (sql, ...p) => Promise.resolve(db.prepare(sql).get(...p));
 
-    // Lead times médios por período
-    const medias = await q(db, `
+    const medias = await q(`
       SELECT
         COUNT(*) as total_os,
         ROUND(AVG(EXTRACT(EPOCH FROM (data_entrada_compras - criado_em))/3600/24), 1) as lt_primam_compras,
@@ -106,8 +105,7 @@ router.get('/lead-times', async (req, res) => {
       WHERE data_entrada_compras IS NOT NULL
     `);
 
-    // Últimas OS com lead times calculados
-    const historico = await qa(db, `
+    const historico = await qa(`
       SELECT
         numero_os, cliente, status,
         data_entrada_compras, data_triagem_concluida,

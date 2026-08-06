@@ -60,6 +60,7 @@ const PageDetalheOS = {
     document.getElementById('topbar-actions').innerHTML =
       '<button class="btn btn-secondary btn-sm" onclick="App.voltar()">← Voltar</button>' +
       '<button class="btn btn-secondary btn-sm" onclick="PageDetalheOS.exportarExcel()">⬇ Excel</button>' +
+      '<button class="btn btn-secondary btn-sm" onclick="PageDetalheOS.abrirModalPC()" title="Vincular Pedido de Compra">🧾 Vincular PC</button>' +
       '<button class="btn btn-secondary btn-sm" onclick="PageDetalheOS.imprimirPDF()" title="Gerar PDF profissional">🖨 PDF</button>' +
       '<button class="btn btn-secondary btn-sm" onclick="PageDetalheOS.duplicar()" title="Duplicar esta O.S.">⧉ Duplicar</button>' +
       (this.editando
@@ -575,6 +576,79 @@ const PageDetalheOS = {
       { key:'observacoes',          label:'Observações'      },
     ];
     ExportExcel.exportar(this.os.pecas, colunas, 'pecas-os-' + this.os.numero_os);
+  },
+
+  abrirModalPC() {
+    // Cria modal inline
+    const existente = document.getElementById('modal-pc');
+    if (existente) existente.remove();
+    const div = document.createElement('div');
+    div.id = 'modal-pc';
+    div.className = 'modal-backdrop';
+    div.innerHTML =
+      '<div class="modal">' +
+      '<div class="modal-header"><span class="modal-title">🧾 Vincular Pedido de Compra</span>' +
+      '<button class="btn-icon" onclick="document.getElementById(\'modal-pc\').remove()">✕</button></div>' +
+      '<div class="modal-body">' +
+      '<p style="font-size:12px;color:var(--text-2);margin-bottom:16px">Selecione o(s) PDF(s) do Pedido de Compra desta O.S. O sistema vincula automaticamente às peças pelo código.</p>' +
+      '<div style="border:2px dashed var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;cursor:pointer;margin-bottom:12px" onclick="document.getElementById(\'pc-modal-input\').click()">' +
+      '<div style="font-size:28px;margin-bottom:6px">🧾</div>' +
+      '<div style="font-size:12px;font-weight:600;color:var(--text-2)">Clique para selecionar PDFs de PC</div>' +
+      '<input type="file" id="pc-modal-input" accept=".pdf" multiple style="display:none" onchange="PageDetalheOS.pcModalSelecionado(this.files)">' +
+      '</div>' +
+      '<div id="pc-modal-lista" style="margin-bottom:10px"></div>' +
+      '<div id="pc-modal-resultado"></div>' +
+      '</div>' +
+      '<div class="modal-footer">' +
+      '<button class="btn btn-secondary" onclick="document.getElementById(\'modal-pc\').remove()">Fechar</button>' +
+      '<button class="btn btn-primary" id="btn-pc-modal" onclick="PageDetalheOS.importarPCModal()" disabled>Importar PC</button>' +
+      '</div></div>';
+    document.body.appendChild(div);
+  },
+
+  pcModalSelecionado(files) {
+    if (!files.length) return;
+    this._pcModalFiles = files;
+    document.getElementById('pc-modal-lista').innerHTML =
+      '<div style="background:var(--surface-2);border-radius:var(--radius);padding:8px 12px;font-size:11px;color:var(--text-2)">' +
+      Array.from(files).map(f => '📄 ' + f.name).join('<br>') + '</div>';
+    document.getElementById('btn-pc-modal').disabled = false;
+  },
+
+  async importarPCModal() {
+    const files = this._pcModalFiles;
+    if (!files?.length) return;
+    document.getElementById('pc-modal-resultado').innerHTML = '<div class="alert alert-warning">Importando…</div>';
+    document.getElementById('btn-pc-modal').disabled = true;
+    try {
+      const fd = new FormData();
+      Array.from(files).forEach(f => fd.append('arquivos', f));
+      const resp = await fetch('/api/importar-pc', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Api.token },
+        body: fd
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro);
+      const ok  = data.resultados.filter(r => r.sucesso);
+      const err = data.resultados.filter(r => !r.sucesso);
+      document.getElementById('pc-modal-resultado').innerHTML =
+        (ok.length ? '<div class="alert alert-success">' +
+          ok.map(r => '✅ PC ' + r.numero_pc + ' — ' + r.pecas_atualizadas + ' peça(s) atualizada(s)' +
+            (r.pecas_nao_encontradas > 0 ? ' · ⚠️ ' + r.pecas_nao_encontradas + ' não localizada(s)' : '')
+          ).join('<br>') + '</div>' : '') +
+        (err.length ? '<div class="alert alert-danger">' + err.map(r => r.arquivo + ': ' + r.erro).join('<br>') + '</div>' : '');
+      App.toast('PC importado!', 'success');
+      // Recarrega a OS para mostrar as peças atualizadas
+      setTimeout(() => {
+        document.getElementById('modal-pc')?.remove();
+        this.os = null;
+        this.render({ id: this._osId });
+      }, 1500);
+    } catch(e) {
+      document.getElementById('pc-modal-resultado').innerHTML = '<div class="alert alert-danger">❌ ' + e.message + '</div>';
+    }
+    document.getElementById('btn-pc-modal').disabled = false;
   },
 
   htmlModalPeca() {
