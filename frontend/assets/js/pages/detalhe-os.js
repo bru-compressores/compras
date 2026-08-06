@@ -161,20 +161,24 @@ const PageDetalheOS = {
   },
 
   _colsPecas: [
-    { key:'codigo',               label:'Código',        tipo:'str'  },
-    { key:'descricao',            label:'Descrição',     tipo:'str'  },
-    { key:'quantidade',           label:'Qtd',           tipo:'num'  },
-    { key:'preco_unitario',       label:'Venda',         tipo:'num'  },
-    { key:'preco_cotado',         label:'Cotado',        tipo:'num'  },
-    { key:'preco_fechado',        label:'Fechado',       tipo:'num'  },
-    { key:'_markup',              label:'Markup',        tipo:'num'  },
-    { key:'fornecedor_nome',      label:'Fornecedor',    tipo:'str'  },
-    { key:'numero_pc',            label:'Nº PC',         tipo:'str'  },
-    { key:'status_entrega',       label:'Status',        tipo:'str'  },
-    { key:'transporte',           label:'Transporte',    tipo:'str'  },
-    { key:'data_entrega_prevista',label:'Prev. Entrega', tipo:'date' },
-    { key:'numero_rastreio',      label:'Rastreio',      tipo:'str'  },
-    { key:'observacoes',          label:'Observações',   tipo:'str'  },
+    { key:'codigo',               label:'Código',         tipo:'str'  },
+    { key:'referencia',           label:'Referência',     tipo:'str'  },
+    { key:'codigo_fabricante',    label:'Cód. Fabricante',tipo:'str'  },
+    { key:'descricao',            label:'Descrição',      tipo:'str'  },
+    { key:'quantidade',           label:'Qtd',            tipo:'num'  },
+    { key:'preco_unitario',       label:'Venda',          tipo:'num'  },
+    { key:'preco_cotado',         label:'Cotado',         tipo:'num'  },
+    { key:'preco_fechado',        label:'Fechado',        tipo:'num'  },
+    { key:'_markup',              label:'Markup',         tipo:'num'  },
+    { key:'data_rc',              label:'Data RC',        tipo:'str'  },
+    { key:'data_compra',          label:'Data Compra',    tipo:'str'  },
+    { key:'data_entrega_prevista',label:'Prev. Entrega',  tipo:'date' },
+    { key:'fornecedor_nome',      label:'Fornecedor',     tipo:'str'  },
+    { key:'numero_pc',            label:'Nº PC',          tipo:'str'  },
+    { key:'status_entrega',       label:'Status',         tipo:'str'  },
+    { key:'transporte',           label:'Transporte',     tipo:'str'  },
+    { key:'numero_rastreio',      label:'Rastreio',       tipo:'str'  },
+    { key:'observacoes',          label:'Observações',    tipo:'str'  },
   ],
 
   renderTabelaPecas() {
@@ -206,42 +210,57 @@ const PageDetalheOS = {
         ? ';background:#fffbeb;border-left:3px solid #eab308'
         : '';
       return '<tr onclick="PageDetalheOS.editarPecaInline(' + p.id + ')" style="cursor:pointer' + bgLinha + '">' +
-        '<td>' + (p.codigo||'<span class="text-muted">—</span>') + '</td>' +
+        // 1. Código
+        '<td><code style="font-size:10px;background:var(--surface-2);padding:1px 5px;border-radius:4px">' + (p.codigo||'—') + '</code></td>' +
+        // 2. Referência
+        '<td>' + (p.referencia ? '<code style="font-size:10px;background:var(--surface-2);padding:1px 5px;border-radius:4px">' + p.referencia + '</code>' : '<span class="text-muted">—</span>') + '</td>' +
+        // 3. Cód. Fabricante
+        '<td>' + (p.codigo_fabricante ? '<code style="font-size:10px;background:var(--surface-2);padding:1px 5px;border-radius:4px">' + p.codigo_fabricante + '</code>' : '<span class="text-muted">—</span>') + '</td>' +
+        // 4. Descrição
         '<td style="max-width:180px">' + p.descricao + '</td>' +
+        // 5. Qtd
         '<td style="text-align:center">' + p.quantidade + '</td>' +
+        // 6. Venda
         '<td>' + Fmt.moeda(p.preco_unitario) + '</td>' +
-        '<td>' + Fmt.moeda(p.preco_cotado) + '</td>' +
-        '<td>' + Fmt.moeda(p.preco_fechado) + '</td>' +
+        // 7. Cotado
+        '<td>' + (p.preco_cotado ? Fmt.moeda(p.preco_cotado) : '<span class="text-muted">-</span>') + '</td>' +
+        // 8. Fechado
+        '<td>' + (p.preco_fechado ? Fmt.moeda(p.preco_fechado) : '<span class="text-muted">-</span>') + '</td>' +
+        // 9. Markup
         '<td>' + mkCell + '</td>' +
-        '<td style="font-size:11px">' + (this.os?.data_entrada_compras ? Fmt.data(this.os.data_entrada_compras) : '<span class="text-muted">—</span>') + '</td>' +
-        '<td style="font-size:11px">' + (p.data_compra ? Fmt.data(p.data_compra) : '<span class="text-muted">—</span>') + '</td>' +
-        '<td style="font-size:11px">' + (p.data_entrega_prevista ? Fmt.data(p.data_entrega_prevista) : '<span class="text-muted">—</span>') + '</td>' +
-        '<td>' + (p.fornecedor_nome||'<span class="text-muted">—</span>') + '</td>' +
+        // 10. Data RC (data que a O.S. entrou em compras)
+        '<td style="font-size:11px;white-space:nowrap">' + (this.os?.data_entrada_compras ? Fmt.data(this.os.data_entrada_compras) : '<span class="text-muted">—</span>') + '</td>' +
+        // 11. Data Compra (data de emissão do PC)
+        '<td style="font-size:11px;white-space:nowrap">' + (p.data_compra ? Fmt.data(p.data_compra) : '<span class="text-muted">—</span>') + '</td>' +
+        // 12. Prev. Entrega
+        '<td style="white-space:nowrap">' + (p.data_entrega_prevista ? Fmt.semaforoPrazo(p.data_entrega_prevista) : '<span class="text-muted">—</span>') + '</td>' +
+        // 13. Fornecedor
+        '<td style="font-size:11px">' + (p.fornecedor_nome||'<span class="text-muted">—</span>') + '</td>' +
+        // 14. Nº PC
         '<td>' + (p.numero_pc
           ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1a56db;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">' +
             '<span style="background:#1a56db;color:#fff;border-radius:10px;padding:0 4px;font-size:9px">PC</span>' + p.numero_pc.replace('PC-','') +
             '</span>'
           : '<span class="text-muted">—</span>') + '</td>' +
-        // Status colorido com dropdown
+        // 15. Status com dropdown
         '<td onclick="event.stopPropagation()" style="white-space:nowrap">' +
         '<div style="position:relative;display:inline-block">' +
         '<div onclick="PageDetalheOS.toggleStatusMenu(event,' + p.id + ')" style="cursor:pointer">' +
         this.badgeStatus(p.status_entrega) +
         '<span style="font-size:9px;color:var(--text-4);margin-left:3px">▼</span></div>' +
-        '<div id="status-menu-' + p.id + '" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 20px rgba(0,0,0,.15);min-width:180px;padding:4px 0">' +
-        ['Pendente','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(s =>
+        '<div id="status-menu-' + p.id + '" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 20px rgba(0,0,0,.15);min-width:200px;padding:4px 0">' +
+        ['Aguardando Triagem','Separado (Almoxarifado)','Pendente','Em cotação','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(s =>
           '<div onclick="PageDetalheOS.atualizarStatusPeca(' + p.id + ',\'' + s + '\')" style="padding:7px 12px;cursor:pointer;font-size:12px" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
           this.badgeStatus(s) + '</div>'
         ).join('') +
         '</div></div></td>' +
-        // Transportadora
+        // 16. Transporte
         '<td>' + (p.transporte ? '<span style="font-size:11px;background:var(--surface-2);padding:2px 7px;border-radius:4px">' + p.transporte + '</span>' : '<span class="text-muted">—</span>') + '</td>' +
-        // Data prevista
-        '<td style="white-space:nowrap">' + (p.data_entrega_prevista ? Fmt.semaforoPrazo(p.data_entrega_prevista) : '<span class="text-muted">—</span>') + '</td>' +
-        // Rastreio
+        // 17. Rastreio
         '<td>' + (p.numero_rastreio ? '<code style="font-size:10px">' + p.numero_rastreio + '</code>' : '<span class="text-muted">—</span>') + '</td>' +
-        // Observações
+        // 18. Observações
         '<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (p.observacoes||'') + '">' + (p.observacoes ? '<span style="font-size:11px;color:var(--text-3)">' + p.observacoes + '</span>' : '<span class="text-muted">—</span>') + '</td>' +
+        // Botão excluir
         '<td onclick="event.stopPropagation()">' +
         '<button class="btn-icon" title="Excluir" onclick="PageDetalheOS.excluirPeca(' + p.id + ')" style="color:var(--danger);font-size:16px">🗑</button>' +
         '</td></tr>';
