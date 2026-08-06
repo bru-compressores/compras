@@ -48,6 +48,39 @@ router.put('/:id', async (req, res) => {
     const { codigo, descricao, quantidade, preco_unitario, preco_cotado, preco_fechado, fornecedor_id, status_entrega, data_entrega_prevista, numero_rastreio, observacoes, transporte, codigo_fabricante } = req.body;
     await qr(db, `UPDATE pecas_os SET codigo=?,descricao=?,quantidade=?,preco_unitario=?,preco_cotado=?,preco_fechado=?,fornecedor_id=?,status_entrega=?,data_entrega_prevista=?,numero_rastreio=?,observacoes=?,transporte=?,codigo_fabricante=?,atualizado_em=NOW() WHERE id=?`,
       codigo!==undefined?codigo:p.codigo, descricao||p.descricao, quantidade||p.quantidade, preco_unitario!==undefined?preco_unitario:p.preco_unitario, preco_cotado!==undefined?preco_cotado:p.preco_cotado, preco_fechado!==undefined?preco_fechado:p.preco_fechado, fornecedor_id!==undefined?fornecedor_id:p.fornecedor_id, status_entrega||p.status_entrega, data_entrega_prevista!==undefined?data_entrega_prevista:p.data_entrega_prevista, numero_rastreio!==undefined?numero_rastreio:p.numero_rastreio, observacoes!==undefined?observacoes:p.observacoes, transporte!==undefined?transporte:p.transporte, codigo_fabricante!==undefined?codigo_fabricante:p.codigo_fabricante, req.params.id);
+    // ── Avanço automático da O.S. no Kanban ──────────────────────────────
+    if (status_entrega) {
+      try {
+        const pAtual = await q(db, 'SELECT * FROM pecas_os WHERE id = ?', req.params.id);
+        const osId = pAtual?.os_id;
+        if (osId) {
+          const os = await q(db, 'SELECT * FROM ordens_servico WHERE id = ?', osId);
+          const todasPecas = await qa(db, 'SELECT status_entrega FROM pecas_os WHERE os_id = ?', osId);
+          const ativas = todasPecas.filter(p => !['Separado (Almoxarifado)', 'Cancelado', 'Aguardando Triagem'].includes(p.status_entrega));
+
+          // Todas pedidas (Pedido realizado, Em trânsito, Entregue, Em cotação) → Aguardando peças
+          const todasPedidas = ativas.length > 0 && ativas.every(p =>
+            ['Pedido realizado', 'Em trânsito', 'Entregue', 'Em cotação'].includes(p.status_entrega)
+          );
+          // Todas entregues → Peças separadas
+          const todasEntregues = ativas.length > 0 && ativas.every(p => p.status_entrega === 'Entregue');
+
+          let novoStatusOS = null;
+          if (todasEntregues && os.status === 'Aguardando peças') {
+            novoStatusOS = 'Peças separadas';
+          } else if (todasPedidas && os.status === 'Aberta') {
+            novoStatusOS = 'Aguardando peças';
+          }
+
+          if (novoStatusOS) {
+            await qr(db, 'UPDATE ordens_servico SET status=?, atualizado_em=NOW() WHERE id=?', novoStatusOS, osId);
+            await qr(db, 'INSERT INTO historico_status (os_id,status_anterior,status_novo,observacao,usuario_id) VALUES (?,?,?,?,?)',
+              osId, os.status, novoStatusOS, 'Avanço automático pelo status das peças', req.usuario?.id || null);
+          }
+        }
+      } catch(eAuto) { /* não bloqueia a resposta por erro no avanço automático */ }
+    }
+
     res.json({ mensagem: 'Peça atualizada' });
   } catch(e) { res.status(500).json({ erro: e.message }); }
 });

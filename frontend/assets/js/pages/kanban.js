@@ -97,9 +97,9 @@ const PageKanban = {
       // Progress bar de peças
       (pc > 0 ? '<div style="margin-bottom:6px">' +
         '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-4);margin-bottom:2px">' +
-        '<span>Peças</span><span>' + ent + '/' + pc + '</span></div>' +
+        '<span>Peças</span><span>' + ent + '/' + pc + (pct===100?' ✓':'') + '</span></div>' +
         '<div style="height:3px;background:var(--surface-3);border-radius:2px">' +
-        '<div style="height:100%;background:' + (pct===100?'#059669':'#1a56db') + ';border-radius:2px;width:' + pct + '%"></div>' +
+        '<div style="height:100%;background:' + (pct===100?'#059669':pct>0?'#1a56db':'#94a3b8') + ';border-radius:2px;width:' + pct + '%"></div>' +
         '</div></div>' : '') +
 
       // Prazo

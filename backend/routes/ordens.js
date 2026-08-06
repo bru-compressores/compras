@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     const offset = (parseInt(pagina)-1) * parseInt(limite);
     const totalRow = await q(db, `SELECT COUNT(*) as total FROM ordens_servico o ${wc}`, ...params);
     const total = parseInt(totalRow.total) || 0;
-    const registrosRaw = await qa(db, `SELECT o.*, (SELECT COUNT(*) FROM pecas_os p WHERE p.os_id = o.id) as total_pecas, (SELECT COUNT(*) FROM pecas_os p WHERE p.os_id = o.id AND p.status_entrega = 'Entregue') as pecas_entregues FROM ordens_servico o ${wc} ORDER BY CASE o.prioridade WHEN 'Alta' THEN 1 WHEN 'Média' THEN 2 ELSE 3 END, o.data_abertura DESC LIMIT ? OFFSET ?`, ...params, parseInt(limite), offset);
+    const registrosRaw = await qa(db, `SELECT o.*, (SELECT COUNT(*) FROM pecas_os p WHERE p.os_id = o.id) as total_pecas, (SELECT COUNT(*) FROM pecas_os p WHERE p.os_id = o.id AND p.status_entrega IN ('Pedido realizado','Em trânsito','Entregue','Em cotação')) as pecas_entregues FROM ordens_servico o ${wc} ORDER BY CASE o.prioridade WHEN 'Alta' THEN 1 WHEN 'Média' THEN 2 ELSE 3 END, o.data_abertura DESC LIMIT ? OFFSET ?`, ...params, parseInt(limite), offset);
     const registros = registrosRaw.map(r => ({ ...r, total_pecas: parseInt(r.total_pecas)||0, pecas_entregues: parseInt(r.pecas_entregues)||0 }));
     res.json({ total, pagina: parseInt(pagina), limite: parseInt(limite), registros });
   } catch(e) { res.status(500).json({ erro: e.message }); }
@@ -33,6 +33,7 @@ router.get('/:id', async (req, res) => {
     const os = await q(db, 'SELECT * FROM ordens_servico WHERE id = ?', req.params.id);
     if (!os) return res.status(404).json({ erro: 'O.S. não encontrada' });
     const pecas = await qa(db, `SELECT p.*, f.nome as fornecedor_nome FROM pecas_os p LEFT JOIN fornecedores f ON p.fornecedor_id = f.id WHERE p.os_id = ? ORDER BY p.criado_em`, req.params.id);
+    const pecas_resolvidas = pecas.filter(p => ['Pedido realizado','Em trânsito','Entregue','Em cotação'].includes(p.status_entrega)).length;
     const historico = await qa(db, `SELECT h.*, u.nome as usuario_nome FROM historico_status h LEFT JOIN usuarios u ON h.usuario_id = u.id WHERE h.os_id = ? ORDER BY h.criado_em DESC`, req.params.id);
     res.json({ ...os, pecas, historico });
   } catch(e) { res.status(500).json({ erro: e.message }); }
