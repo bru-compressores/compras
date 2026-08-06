@@ -168,8 +168,8 @@ const PageDetalheOS = {
     { key:'preco_cotado',         label:'Cotado',        tipo:'num'  },
     { key:'preco_fechado',        label:'Fechado',       tipo:'num'  },
     { key:'_markup',              label:'Markup',        tipo:'num'  },
-    { key:'numero_pc',            label:'Nº PC',         tipo:'str'  },
     { key:'fornecedor_nome',      label:'Fornecedor',    tipo:'str'  },
+    { key:'numero_pc',            label:'Nº PC',         tipo:'str'  },
     { key:'status_entrega',       label:'Status',        tipo:'str'  },
     { key:'transporte',           label:'Transporte',    tipo:'str'  },
     { key:'data_entrega_prevista',label:'Prev. Entrega', tipo:'date' },
@@ -213,6 +213,9 @@ const PageDetalheOS = {
         '<td>' + Fmt.moeda(p.preco_cotado) + '</td>' +
         '<td>' + Fmt.moeda(p.preco_fechado) + '</td>' +
         '<td>' + mkCell + '</td>' +
+        '<td style="font-size:11px">' + (this.os?.data_entrada_compras ? Fmt.data(this.os.data_entrada_compras) : '<span class="text-muted">—</span>') + '</td>' +
+        '<td style="font-size:11px">' + (p.data_compra ? Fmt.data(p.data_compra) : '<span class="text-muted">—</span>') + '</td>' +
+        '<td style="font-size:11px">' + (p.data_entrega_prevista ? Fmt.data(p.data_entrega_prevista) : '<span class="text-muted">—</span>') + '</td>' +
         '<td>' + (p.fornecedor_nome||'<span class="text-muted">—</span>') + '</td>' +
         '<td>' + (p.numero_pc
           ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1a56db;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">' +
@@ -330,6 +333,11 @@ const PageDetalheOS = {
       document.getElementById('peca-data-prev').value    = peca.data_entrega_prevista?.split('T')[0]||'';
       document.getElementById('peca-rastreio').value     = peca.numero_rastreio||'';
       document.getElementById('peca-obs').value          = peca.observacoes||'';
+      document.getElementById('peca-data-compra').value  = peca.data_compra ? peca.data_compra.split('T')[0] : '';
+      document.getElementById('peca-referencia').value   = peca.referencia||'';
+      document.getElementById('peca-numero-pc').value    = peca.numero_pc||'';
+      const badgePC = document.getElementById('pc-badge-modal');
+      if (badgePC) { badgePC.style.display = peca.numero_pc ? 'inline-flex' : 'none'; if (peca.numero_pc) badgePC.textContent = '📥 Importado via ' + peca.numero_pc; }
     } else {
       document.getElementById('form-peca').reset();
       document.getElementById('peca-fornecedor-wrap').innerHTML =
@@ -726,6 +734,12 @@ const PageDetalheOS = {
       '<option>Aguardando Triagem</option><option>Separado (Almoxarifado)</option><option>Pendente</option><option>Em cotação</option><option>Pedido realizado</option><option>Em trânsito</option><option>Entregue</option><option>Cancelado</option>' +
       '</select></div>' +
       '<div class="form-group"><label class="form-label">Data prevista de entrega</label><input id="peca-data-prev" class="form-input" type="date"></div>' +
+      '<div class="form-group"><label class="form-label">Data Compra (PC)</label><input id="peca-data-compra" class="form-input" type="date"></div>' +
+      '<div class="form-group"><label class="form-label">Referência</label><input id="peca-referencia" class="form-input" placeholder="Ex: KX500-007"></div>' +
+      '<div class="form-group"><label class="form-label">Nº PC</label>' +
+      '<div style="display:flex;align-items:center;gap:8px"><input id="peca-numero-pc" class="form-input" placeholder="Ex: PC-1820">' +
+      '<span id="pc-badge-modal" style="display:none;align-items:center;gap:4px;background:#eff6ff;color:#1a56db;padding:3px 8px;border-radius:20px;font-size:10px;white-space:nowrap"></span>' +
+      '</div></div>' +
       '<div class="form-group"><label class="form-label">Número de rastreio</label><input id="peca-rastreio" class="form-input" placeholder="BR0000000000AA"></div>' +
       '<div class="form-group form-full"><label class="form-label">Observações</label><textarea id="peca-obs" class="form-textarea"></textarea></div>' +
       '<div id="peca-historico-panel" style="display:none;margin-top:14px;padding:14px;background:var(--surface-2);border-radius:var(--radius);border-left:3px solid var(--brand2)">' +

@@ -199,6 +199,7 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
           UPDATE pecas_os SET
             preco_fechado = ?,
             data_entrega_prevista = ?,
+            data_compra = ?,
             status_entrega = 'Pedido realizado',
             fornecedor_id = COALESCE(?, fornecedor_id),
             numero_pc = ?,
@@ -208,6 +209,7 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
         `).run(
           item.preco_fechado || null,
           item.prev_entrega  || null,
+          pc.data_emissao   || null,
           fornecedorId,
           pc.numero_pc ? 'PC-' + pc.numero_pc : null,
           item.referencia || null,

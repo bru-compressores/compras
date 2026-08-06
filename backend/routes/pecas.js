@@ -33,9 +33,9 @@ router.post('/', async (req, res) => {
     const { os_id, codigo, descricao, quantidade, preco_unitario, preco_cotado, preco_fechado, fornecedor_id, status_entrega, data_entrega_prevista, numero_rastreio, observacoes, transporte, codigo_fabricante } = req.body;
     if (!os_id || !descricao) return res.status(400).json({ erro: 'OS e descrição são obrigatórios' });
     if (!await q(db, 'SELECT id FROM ordens_servico WHERE id = ?', os_id)) return res.status(404).json({ erro: 'O.S. não encontrada' });
-    const { referencia: ref_i, numero_pc: npc_i } = req.body;
-    await qr(db, `INSERT INTO pecas_os (os_id,codigo,descricao,quantidade,preco_unitario,preco_cotado,preco_fechado,fornecedor_id,status_entrega,data_entrega_prevista,numero_rastreio,observacoes,transporte,codigo_fabricante,referencia,numero_pc) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      os_id, codigo||null, descricao, quantidade||1, preco_unitario||null, preco_cotado||null, preco_fechado||null, fornecedor_id||null, status_entrega||'Pendente', data_entrega_prevista||null, numero_rastreio||null, observacoes||null, transporte||null, codigo_fabricante||null, ref_i||null, npc_i||null);
+    const { referencia: ref_i, numero_pc: npc_i, data_compra: dc_i } = req.body;
+    await qr(db, `INSERT INTO pecas_os (os_id,codigo,descricao,quantidade,preco_unitario,preco_cotado,preco_fechado,fornecedor_id,status_entrega,data_entrega_prevista,numero_rastreio,observacoes,transporte,codigo_fabricante,referencia,numero_pc,data_compra) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      os_id, codigo||null, descricao, quantidade||1, preco_unitario||null, preco_cotado||null, preco_fechado||null, fornecedor_id||null, status_entrega||'Pendente', data_entrega_prevista||null, numero_rastreio||null, observacoes||null, transporte||null, codigo_fabricante||null, ref_i||null, npc_i||null, dc_i||null);
     const nova = await q(db, 'SELECT id FROM pecas_os WHERE os_id = ? ORDER BY id DESC LIMIT 1', os_id);
     res.status(201).json({ id: nova?.id, mensagem: 'Peça adicionada' });
   } catch(e) { res.status(500).json({ erro: e.message }); }
