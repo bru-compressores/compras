@@ -197,7 +197,8 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
             data_entrega_prevista = ?,
             status_entrega = 'Pedido realizado',
             fornecedor_id = COALESCE(?, fornecedor_id),
-            numero_rastreio = COALESCE(numero_rastreio, ?),
+            numero_pc = ?,
+            referencia = COALESCE(?, referencia),
             atualizado_em = NOW()
           WHERE id = ?
         `).run(
@@ -205,6 +206,7 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
           item.prev_entrega  || null,
           fornecedorId,
           pc.numero_pc ? 'PC-' + pc.numero_pc : null,
+          item.referencia || null,
           peca.id
         ));
 

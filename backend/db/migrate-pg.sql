@@ -99,3 +99,5 @@ ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_triagem_concluida TIMES
 ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_primeiro_pedido TIMESTAMP;
 ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_todas_pedidas TIMESTAMP;
 ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_entrega_completa TIMESTAMP;
+ALTER TABLE pecas_os ADD COLUMN IF NOT EXISTS numero_pc TEXT;
+ALTER TABLE pecas_os ADD COLUMN IF NOT EXISTS referencia TEXT;

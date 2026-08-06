@@ -83,6 +83,9 @@ const PageDetalheOS = {
       '<div class="kpi-sub">' + (mkGlobal ? 'venda/fechado' : 'sem valor fechado') + '</div></div>' +
       '</div>' +
 
+      // ── Cards de PCs vinculados ──────────────────────────────────────────
+      this.renderCardsPC() +
+
       '<div class="card mb-14"><div class="card-header"><div class="card-title">Peças</div>' +
       '<button class="btn btn-orange btn-sm" onclick="PageDetalheOS.abrirModalPeca()">+ Adicionar peça</button></div>' +
       this.renderTabelaPecas() + '</div>' +
@@ -165,6 +168,7 @@ const PageDetalheOS = {
     { key:'preco_cotado',         label:'Cotado',        tipo:'num'  },
     { key:'preco_fechado',        label:'Fechado',       tipo:'num'  },
     { key:'_markup',              label:'Markup',        tipo:'num'  },
+    { key:'numero_pc',            label:'Nº PC',         tipo:'str'  },
     { key:'fornecedor_nome',      label:'Fornecedor',    tipo:'str'  },
     { key:'status_entrega',       label:'Status',        tipo:'str'  },
     { key:'transporte',           label:'Transporte',    tipo:'str'  },
@@ -210,6 +214,11 @@ const PageDetalheOS = {
         '<td>' + Fmt.moeda(p.preco_fechado) + '</td>' +
         '<td>' + mkCell + '</td>' +
         '<td>' + (p.fornecedor_nome||'<span class="text-muted">—</span>') + '</td>' +
+        '<td>' + (p.numero_pc
+          ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1a56db;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">' +
+            '<span style="background:#1a56db;color:#fff;border-radius:10px;padding:0 4px;font-size:9px">PC</span>' + p.numero_pc.replace('PC-','') +
+            '</span>'
+          : '<span class="text-muted">—</span>') + '</td>' +
         // Status colorido com dropdown
         '<td onclick="event.stopPropagation()" style="white-space:nowrap">' +
         '<div style="position:relative;display:inline-block">' +
@@ -576,6 +585,48 @@ const PageDetalheOS = {
       { key:'observacoes',          label:'Observações'      },
     ];
     ExportExcel.exportar(this.os.pecas, colunas, 'pecas-os-' + this.os.numero_os);
+  },
+
+  renderCardsPC() {
+    // Agrupa peças por número de PC
+    const pcsMap = {};
+    (this.os.pecas || []).forEach(p => {
+      if (!p.numero_pc) return;
+      if (!pcsMap[p.numero_pc]) {
+        pcsMap[p.numero_pc] = {
+          numero_pc: p.numero_pc,
+          fornecedor: p.fornecedor_nome || '—',
+          itens: [],
+          valor_total: 0,
+          prev_entrega: null
+        };
+      }
+      pcsMap[p.numero_pc].itens.push(p);
+      pcsMap[p.numero_pc].valor_total += (p.preco_fechado || 0) * (p.quantidade || 1);
+      if (p.data_entrega_prevista && (!pcsMap[p.numero_pc].prev_entrega || p.data_entrega_prevista > pcsMap[p.numero_pc].prev_entrega)) {
+        pcsMap[p.numero_pc].prev_entrega = p.data_entrega_prevista;
+      }
+    });
+
+    const pcs = Object.values(pcsMap);
+    if (!pcs.length) return '';
+
+    return '<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px">' +
+      pcs.map(pc =>
+        '<div style="flex:1;min-width:220px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius-lg);padding:12px 14px">' +
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+        '<span style="background:#1a56db;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">PC</span>' +
+        '<span style="font-size:14px;font-weight:700;color:#1e40af">' + pc.numero_pc.replace('PC-','') + '</span>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#1e40af;margin-bottom:4px">🏭 ' + pc.fornecedor + '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:#3b82f6">' +
+        '<span>' + pc.itens.length + ' item(ns)</span>' +
+        '<span style="font-weight:600">' + Fmt.moeda(pc.valor_total) + '</span>' +
+        '</div>' +
+        (pc.prev_entrega ? '<div style="font-size:10px;color:#6b7280;margin-top:4px">Prev. entrega: ' + Fmt.data(pc.prev_entrega) + '</div>' : '') +
+        '</div>'
+      ).join('') +
+      '</div>';
   },
 
   abrirModalPC() {
