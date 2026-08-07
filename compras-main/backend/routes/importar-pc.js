@@ -142,15 +142,14 @@ router.post('/', upload.array('arquivos', 50), async (req, res) => {
       const parsed = await pdfParse(buffer);
       const pc     = extrairPC(parsed.text);
 
-      if (!pc.numero_pc)   throw new Error('Número do PC não encontrado no PDF');
-      if (!pc.itens.length) throw new Error('Nenhum item encontrado no PC');
+      if (!pc.numero_pc)       throw new Error('Número do PC não encontrado');
+      if (!pc.requisicao_almox) throw new Error('Número da Requisição não encontrado');
+      if (!pc.itens.length)     throw new Error('Nenhum item encontrado no PC');
 
-      // Buscar O.S. pela requisição se existir, senão deixa lista vazia (usa fallback por código)
-      const osLista = pc.requisicao_almox
-        ? await Promise.resolve(db.prepare(
-            `SELECT id, numero_os FROM ordens_servico WHERE observacoes LIKE ? OR numero_os = ?`
-          ).all(`%${pc.requisicao_almox}%`, pc.requisicao_almox))
-        : [];
+      // Buscar O.S. pela requisição (observações ou número_os)
+      const osLista = await Promise.resolve(db.prepare(
+        `SELECT id, numero_os FROM ordens_servico WHERE observacoes LIKE ? OR numero_os = ?`
+      ).all(`%${pc.requisicao_almox}%`, pc.requisicao_almox));
 
       console.log(`PC ${pc.numero_pc} | Req: ${pc.requisicao_almox} | OS encontradas: ${osLista.length} | Itens: ${pc.itens.length}`);
       pc.itens.forEach(i => console.log(`  Item: cod=${i.codigo} ref=${i.referencia} R$${i.preco_fechado}`));

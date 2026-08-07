@@ -1,0 +1,1 @@
+// Definido em rastreamento.js

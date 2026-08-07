@@ -1,0 +1,237 @@
+const PageImportar = {
+  arquivos: [],
+
+  render() {
+    document.getElementById('topbar-actions').innerHTML =
+      '<button class="btn btn-secondary btn-sm" onclick="App.navigate(\'dashboard\')">← Dashboard</button>';
+
+    document.getElementById('content').innerHTML =
+      '<div style="display:flex;flex-direction:column;gap:16px;max-width:900px">' +
+
+      // ── PDF Primam ────────────────────────────────────────────────────────
+      '<div class="card">' +
+      '<div class="card-header"><div><div class="card-title">📄 Importar O.S. via PDF — Primam</div>' +
+      '<div class="card-subtitle">Arraste os PDFs exportados do Primam. Peças extraídas automaticamente.</div></div></div>' +
+      '<div id="dropzone" style="border:2px dashed var(--border);border-radius:var(--radius-lg);padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px"' +
+      ' onclick="document.getElementById(\'pdf-input\').click()"' +
+      ' ondragover="event.preventDefault();this.style.borderColor=\'var(--brand2)\';this.style.background=\'var(--brand-light)\'"' +
+      ' ondragleave="this.style.borderColor=\'var(--border)\';this.style.background=\'\'"' +
+      ' ondrop="PageImportar.onDrop(event)">' +
+      '<div style="font-size:32px;margin-bottom:6px">📄</div>' +
+      '<div style="font-size:13px;font-weight:600;color:var(--text-2)">Arraste os PDFs aqui ou clique para selecionar</div>' +
+      '<div style="font-size:11px;color:var(--text-4);margin-top:3px">Vários arquivos de uma vez — máx. 50 por lote</div>' +
+      '<input type="file" id="pdf-input" accept=".pdf" multiple style="display:none" onchange="PageImportar.onFileSelect(this.files)"></div>' +
+      '<div id="lista-arquivos" style="margin-bottom:12px"></div>' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+      '<button class="btn btn-orange" id="btn-importar" onclick="PageImportar.importar()" disabled>Importar PDFs</button>' +
+      '<button class="btn btn-secondary" onclick="PageImportar.limpar()">Limpar</button>' +
+      '<span id="import-status" style="font-size:12px;color:var(--text-3)"></span></div>' +
+      '<div id="import-resultado" style="margin-top:12px"></div>' +
+      '</div>' +
+
+      // ── Fornecedores Excel ────────────────────────────────────────────────
+      '<div class="card">' +
+      '<div class="card-header"><div><div class="card-title">🏭 Importar Fornecedores — Excel</div>' +
+      '<div class="card-subtitle">Planilha exportada do ERP Primam</div></div></div>' +
+      '<p style="font-size:12px;color:var(--text-2);margin-bottom:14px">' +
+      'Selecione o relatório de fornecedores <code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">.xls</code> ou <code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">.xlsx</code> exportado do Primam.' +
+      '</p>' +
+      '<div style="background:var(--surface-2);border:2px dashed var(--border);border-radius:var(--radius-lg);padding:24px;text-align:center;margin-bottom:14px">' +
+      '<div style="font-size:28px;margin-bottom:8px">📊</div>' +
+      '<input type="file" id="excel-file" accept=".xls,.xlsx" style="display:none" onchange="PageImportar.excelSelecionado(this)">' +
+      '<button class="btn btn-secondary" onclick="document.getElementById(\'excel-file\').click()">Selecionar planilha Excel</button>' +
+      '<p style="font-size:11px;color:var(--text-4);margin-top:8px" id="excel-nome">Nenhum arquivo selecionado</p>' +
+      '</div>' +
+      '<div style="margin-bottom:14px">' +
+      '<div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Colunas reconhecidas automaticamente</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:5px">' +
+      ['Razão Social / Nome','CNPJ / CPF','Telefone','Cidade','UF','E-mail','Nome Fantasia'].map(c =>
+        '<code style="font-size:11px;background:var(--surface-3);padding:2px 7px;border-radius:4px;color:var(--text-2)">' + c + '</code>'
+      ).join('') +
+      '</div></div>' +
+      '<div id="excel-resultado" style="margin-bottom:12px"></div>' +
+      '<button class="btn btn-primary" id="btn-excel" onclick="PageImportar.importarExcel()" disabled>Importar Fornecedores</button>' +
+      '</div>' +
+
+      // ── Pedido de Compra PDF ──────────────────────────────────────────────
+      '<div class="card">' +
+      '<div class="card-header"><div><div class="card-title">🧾 Importar Pedido de Compra — PDF</div>' +
+      '<div class="card-subtitle">Preenche automaticamente valor fechado, data de entrega, fornecedor e status</div></div></div>' +
+      '<p style="font-size:12px;color:var(--text-2);margin-bottom:14px">Selecione os PDFs de Pedido de Compra gerados pelo Primam. O sistema vincula às peças via <strong>código + nº da requisição</strong> e muda o status para <strong>Pedido realizado</strong> automaticamente.</p>' +
+      '<div style="background:var(--surface-2);border:2px dashed var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;margin-bottom:14px">' +
+      '<div style="font-size:28px;margin-bottom:8px">🧾</div>' +
+      '<input type="file" id="pc-input" accept=".pdf" multiple style="display:none" onchange="PageImportar.pcSelecionado(this.files)">' +
+      '<button class="btn btn-secondary" onclick="document.getElementById(\'pc-input\').click()">Selecionar PDFs de PC</button>' +
+      '<div id="pc-lista" style="margin-top:10px;font-size:11px;color:var(--text-3)"></div>' +
+      '</div>' +
+      '<div id="pc-resultado" style="margin-bottom:10px"></div>' +
+      '<button class="btn btn-primary" id="btn-importar-pc" onclick="PageImportar.importarPC()" disabled>Importar Pedidos de Compra</button>' +
+      '</div>' +
+
+      '</div>';
+  },
+
+  onDrop(e) {
+    e.preventDefault();
+    e.currentTarget.style.borderColor = 'var(--border)';
+    e.currentTarget.style.background  = '';
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+    if (!files.length) { App.toast('Apenas PDFs são aceitos','error'); return; }
+    this.adicionarArquivos(files);
+  },
+  onFileSelect(files) { this.adicionarArquivos(Array.from(files)); },
+  adicionarArquivos(files) { this.arquivos = [...this.arquivos, ...files]; this.renderLista(); },
+  renderLista() {
+    const el = document.getElementById('lista-arquivos');
+    const dropzone = document.getElementById('dropzone');
+    if (!this.arquivos.length) {
+      el.innerHTML = '';
+      document.getElementById('btn-importar').disabled = true;
+      // Restaura dropzone ao tamanho normal
+      if (dropzone) dropzone.style.padding = '28px';
+      return;
+    }
+
+    // Encolhe o dropzone para dar espaço à lista
+    if (dropzone) dropzone.style.padding = '12px';
+
+    el.innerHTML =
+      '<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+      '<span style="background:var(--brand2);color:#fff;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">' + this.arquivos.length + '</span>' +
+      '<span style="font-size:12px;font-weight:600;color:var(--text-2)">arquivo(s) prontos para importar</span>' +
+      '</div>' +
+      '<button onclick="PageImportar.limpar()" style="font-size:11px;color:var(--text-4);background:none;border:none;cursor:pointer;padding:2px 6px">Limpar tudo</button>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto">' +
+      this.arquivos.map((f, i) => {
+        const kb = Math.round(f.size / 1024);
+        const tamanho = kb > 1024 ? (kb/1024).toFixed(1) + ' MB' : kb + ' KB';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface);border-radius:var(--radius);font-size:12px;border:1px solid var(--border)">' +
+          '<span style="font-size:16px">📄</span>' +
+          '<div style="flex:1;min-width:0">' +
+          '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--text)">' + f.name + '</div>' +
+          '<div style="font-size:10px;color:var(--text-4);margin-top:1px">' + tamanho + '</div>' +
+          '</div>' +
+          '<button class="btn-icon" title="Remover" onclick="PageImportar.remover(' + i + ')" style="color:var(--danger);font-size:14px;flex-shrink:0">✕</button>' +
+          '</div>';
+      }).join('') +
+      '</div>' +
+      '</div>';
+
+    document.getElementById('btn-importar').disabled = false;
+  },
+  remover(i) { this.arquivos.splice(i, 1); this.renderLista(); },
+  limpar() {
+    this.arquivos = [];
+    this.renderLista();
+    document.getElementById('import-resultado').innerHTML = '';
+    document.getElementById('pdf-input').value = '';
+    const dropzone = document.getElementById('dropzone');
+    if (dropzone) dropzone.style.padding = '28px';
+  },
+
+  async importar() {
+    if (!this.arquivos.length) return;
+    const btn = document.getElementById('btn-importar');
+    btn.disabled = true; btn.textContent = 'Importando…';
+    document.getElementById('import-status').textContent = 'Processando ' + this.arquivos.length + ' arquivo(s)…';
+    const fd = new FormData();
+    this.arquivos.forEach(f => fd.append('arquivos', f));
+    try {
+      const resp = await fetch('/api/importar-pdf', { method:'POST', headers:{'Authorization':'Bearer '+Api.token}, body:fd });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || 'Erro');
+      const ok  = data.resultados.filter(r => r.sucesso);
+      const err = data.resultados.filter(r => !r.sucesso);
+      const totalP = ok.reduce((s,r) => s + r.pecas_importadas, 0);
+      document.getElementById('import-resultado').innerHTML =
+        (ok.length  ? '<div class="alert alert-success" style="margin-bottom:6px">✅ ' + ok.length + ' O.S. — ' + totalP + ' peças adicionadas</div>' : '') +
+        (err.length ? '<div class="alert alert-danger">' + err.map(r => r.arquivo + ': ' + r.erro).join('<br>') + '</div>' : '') +
+        (ok.length  ? '<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="App.navigate(\'ordens\')">Ver O.S. →</button>' : '');
+      this.arquivos = []; this.renderLista();
+    } catch(e) {
+      document.getElementById('import-resultado').innerHTML = '<div class="alert alert-danger">❌ ' + e.message + '</div>';
+    }
+    btn.disabled = false; btn.textContent = 'Importar PDFs';
+    document.getElementById('import-status').textContent = '';
+  },
+
+  pcSelecionado(files) {
+    const lista = document.getElementById('pc-lista');
+    const btn   = document.getElementById('btn-importar-pc');
+    if (!files.length) { lista.innerHTML = ''; btn.disabled = true; return; }
+    this._pcFiles = files;
+    lista.innerHTML =
+      '<div style="font-size:11px;color:var(--text-3);margin-top:4px">' +
+      Array.from(files).map(f => '📄 ' + f.name).join('<br>') +
+      '</div>';
+    btn.disabled = false;
+  },
+
+  async importarPC() {
+    const files = this._pcFiles;
+    if (!files?.length) return;
+    document.getElementById('pc-resultado').innerHTML = '<div class="alert alert-warning">Importando Pedidos de Compra…</div>';
+    document.getElementById('btn-importar-pc').disabled = true;
+    try {
+      const fd = new FormData();
+      Array.from(files).forEach(f => fd.append('arquivos', f));
+      const resp = await fetch('/api/importar-pc', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Api.token },
+        body: fd
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro);
+      const ok  = data.resultados.filter(r => r.sucesso);
+      const err = data.resultados.filter(r => !r.sucesso);
+      document.getElementById('pc-resultado').innerHTML =
+        (ok.length ? '<div class="alert alert-success" style="margin-bottom:6px">' +
+          ok.map(r =>
+            '✅ PC ' + r.numero_pc + ' — Req. ' + r.requisicao + ' — ' +
+            r.pecas_atualizadas + ' peça(s) atualizada(s)' +
+            (r.os_vinculadas?.length ? ' — O.S.: ' + r.os_vinculadas.join(', ') : '') +
+            (r.pecas_nao_encontradas > 0 ? '<br><small>⚠️ ' + r.pecas_nao_encontradas + ' item(ns) não localizado(s)</small>' : '')
+          ).join('<br>') + '</div>' : '') +
+        (err.length ? '<div class="alert alert-danger">' + err.map(r => r.arquivo + ': ' + r.erro).join('<br>') + '</div>' : '');
+      App.toast('Pedidos de Compra importados!', 'success');
+    } catch(e) {
+      document.getElementById('pc-resultado').innerHTML = '<div class="alert alert-danger">❌ ' + e.message + '</div>';
+    }
+    document.getElementById('btn-importar-pc').disabled = false;
+  },
+
+  excelSelecionado(input) {
+    if (input.files[0]) {
+      document.getElementById('excel-nome').textContent = input.files[0].name;
+      document.getElementById('btn-excel').disabled = false;
+    }
+  },
+
+  async importarExcel() {
+    const file = document.getElementById('excel-file').files[0];
+    if (!file) return;
+    document.getElementById('excel-resultado').innerHTML = '<div class="alert alert-warning">Importando, aguarde…</div>';
+    document.getElementById('btn-excel').disabled = true;
+    try {
+      const fd = new FormData();
+      fd.append('arquivo', file);
+      const resp = await fetch('/api/backup/importar-fornecedores-excel', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Api.token },
+        body: fd
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || 'Erro ao importar');
+      document.getElementById('excel-resultado').innerHTML =
+        '<div class="alert alert-success">✅ ' + data.mensagem +
+        (data.erros?.length ? '<br><small>⚠️ ' + data.erros.join(', ') + '</small>' : '') + '</div>';
+      App.toast('Fornecedores importados!', 'success');
+    } catch(e) {
+      document.getElementById('excel-resultado').innerHTML = '<div class="alert alert-danger">❌ ' + e.message + '</div>';
+    }
+    document.getElementById('btn-excel').disabled = false;
+  }
+};

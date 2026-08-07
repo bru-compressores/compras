@@ -1,0 +1,115 @@
+const express = require('express');
+const { getDB } = require('../db/database');
+const { autenticar } = require('../middleware/auth');
+const router = express.Router();
+router.use(autenticar);
+
+const q  = (db, sql, ...p) => Promise.resolve(db.prepare(sql).get(...p));
+const qa = (db, sql, ...p) => Promise.resolve(db.prepare(sql).all(...p));
+const qr = (db, sql, ...p) => Promise.resolve(db.prepare(sql).run(...p));
+
+router.get('/entregas-pendentes', async (req, res) => {
+  try {
+    const db = getDB();
+    res.json(await qa(db, `SELECT p.*, f.nome as fornecedor_nome, o.numero_os, o.cliente, o.prioridade, o.tipo FROM pecas_os p LEFT JOIN fornecedores f ON p.fornecedor_id = f.id LEFT JOIN ordens_servico o ON p.os_id = o.id WHERE p.status_entrega NOT IN ('Entregue','Cancelado','Aguardando Triagem','Separado (Almoxarifado)') ORDER BY CASE o.prioridade WHEN 'Alta' THEN 1 WHEN 'Média' THEN 2 ELSE 3 END, p.data_entrega_prevista ASC`));
+  } catch(e) { res.status(500).json({ erro: e.message }); }
+});
+
+router.get('/', async (req, res) => {
+  try {
+    const db = getDB();
+    const { os_id, status_entrega } = req.query;
+    let where = [], params = [];
+    if (os_id)          { where.push('p.os_id = ?');          params.push(os_id); }
+    if (status_entrega) { where.push('p.status_entrega = ?');  params.push(status_entrega); }
+    const wc = where.length ? 'WHERE ' + where.join(' AND ') : '';
+    res.json(await qa(db, `SELECT p.*, f.nome as fornecedor_nome, o.numero_os, o.cliente FROM pecas_os p LEFT JOIN fornecedores f ON p.fornecedor_id = f.id LEFT JOIN ordens_servico o ON p.os_id = o.id ${wc} ORDER BY p.criado_em DESC`, ...params));
+  } catch(e) { res.status(500).json({ erro: e.message }); }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const db = getDB();
+    const { os_id, codigo, descricao, quantidade, preco_unitario, preco_cotado, preco_fechado, fornecedor_id, status_entrega, data_entrega_prevista, numero_rastreio, observacoes, transporte, codigo_fabricante } = req.body;
+    if (!os_id || !descricao) return res.status(400).json({ erro: 'OS e descrição são obrigatórios' });
+    if (!await q(db, 'SELECT id FROM ordens_servico WHERE id = ?', os_id)) return res.status(404).json({ erro: 'O.S. não encontrada' });
+    const { referencia: ref_i, numero_pc: npc_i, data_compra: dc_i } = req.body;
+    await qr(db, `INSERT INTO pecas_os (os_id,codigo,descricao,quantidade,preco_unitario,preco_cotado,preco_fechado,fornecedor_id,status_entrega,data_entrega_prevista,numero_rastreio,observacoes,transporte,codigo_fabricante,referencia,numero_pc,data_compra) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      os_id, codigo||null, descricao, quantidade||1, preco_unitario||null, preco_cotado||null, preco_fechado||null, fornecedor_id||null, status_entrega||'Pendente', data_entrega_prevista||null, numero_rastreio||null, observacoes||null, transporte||null, codigo_fabricante||null, ref_i||null, npc_i||null, dc_i||null);
+    const nova = await q(db, 'SELECT id FROM pecas_os WHERE os_id = ? ORDER BY id DESC LIMIT 1', os_id);
+    res.status(201).json({ id: nova?.id, mensagem: 'Peça adicionada' });
+  } catch(e) { res.status(500).json({ erro: e.message }); }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const db = getDB();
+    const p = await q(db, 'SELECT * FROM pecas_os WHERE id = ?', req.params.id);
+    if (!p) return res.status(404).json({ erro: 'Peça não encontrada' });
+    const { codigo, descricao, quantidade, preco_unitario, preco_cotado, preco_fechado, fornecedor_id, status_entrega, data_entrega_prevista, numero_rastreio, observacoes, transporte, codigo_fabricante } = req.body;
+    await qr(db, `UPDATE pecas_os SET codigo=?,descricao=?,quantidade=?,preco_unitario=?,preco_cotado=?,preco_fechado=?,fornecedor_id=?,status_entrega=?,data_entrega_prevista=?,numero_rastreio=?,observacoes=?,transporte=?,codigo_fabricante=?,atualizado_em=NOW() WHERE id=?`,
+      codigo!==undefined?codigo:p.codigo, descricao||p.descricao, quantidade||p.quantidade, preco_unitario!==undefined?preco_unitario:p.preco_unitario, preco_cotado!==undefined?preco_cotado:p.preco_cotado, preco_fechado!==undefined?preco_fechado:p.preco_fechado, fornecedor_id!==undefined?fornecedor_id:p.fornecedor_id, status_entrega||p.status_entrega, data_entrega_prevista!==undefined?data_entrega_prevista:p.data_entrega_prevista, numero_rastreio!==undefined?numero_rastreio:p.numero_rastreio, observacoes!==undefined?observacoes:p.observacoes, transporte!==undefined?transporte:p.transporte, codigo_fabricante!==undefined?codigo_fabricante:p.codigo_fabricante, req.params.id);
+    // ── Avanço automático da O.S. no Kanban ──────────────────────────────
+    if (status_entrega) {
+      try {
+        const pAtual = await q(db, 'SELECT * FROM pecas_os WHERE id = ?', req.params.id);
+        const osId = pAtual?.os_id;
+        if (osId) {
+          const os = await q(db, 'SELECT * FROM ordens_servico WHERE id = ?', osId);
+          const todasPecas = await qa(db, 'SELECT status_entrega FROM pecas_os WHERE os_id = ?', osId);
+          const ativas = todasPecas.filter(p => !['Separado (Almoxarifado)', 'Cancelado', 'Aguardando Triagem'].includes(p.status_entrega));
+
+          // Só avança se tiver peças ativas para comprar
+          if (ativas.length === 0) {
+            // Nenhuma peça para comprar — não avança automaticamente
+          } else {
+            // Todas pedidas (Pedido realizado, Em trânsito, Entregue, Em cotação) → Aguardando peças
+            const todasPedidas = ativas.every(p =>
+              ['Pedido realizado', 'Em trânsito', 'Entregue', 'Em cotação'].includes(p.status_entrega)
+            );
+            // Todas entregues → Peças separadas
+            const todasEntregues = ativas.every(p => p.status_entrega === 'Entregue');
+
+            let novoStatusOS = null;
+            if (todasEntregues && os.status === 'Aguardando peças') {
+              novoStatusOS = 'Peças separadas';
+            } else if (todasPedidas && os.status === 'Aberta') {
+              novoStatusOS = 'Aguardando peças';
+            }
+
+            if (novoStatusOS) {
+              // Captura datas de lead time automaticamente
+              let campoData = '';
+              if (novoStatusOS === 'Aguardando peças') campoData = ', data_todas_pedidas=NOW()';
+              if (novoStatusOS === 'Peças separadas')  campoData = ', data_entrega_completa=NOW()';
+              await qr(db, `UPDATE ordens_servico SET status=?, atualizado_em=NOW()${campoData} WHERE id=?`, novoStatusOS, osId);
+              await qr(db, 'INSERT INTO historico_status (os_id,status_anterior,status_novo,observacao,usuario_id) VALUES (?,?,?,?,?)',
+                osId, os.status, novoStatusOS, 'Avanço automático pelo status das peças', req.usuario?.id || null);
+            }
+
+            // Captura data do primeiro pedido realizado
+            if (status_entrega === 'Pedido realizado') {
+              const jaTemPedido = await q(db, 'SELECT data_primeiro_pedido FROM ordens_servico WHERE id = ? AND data_primeiro_pedido IS NULL', osId);
+              if (jaTemPedido) {
+                await qr(db, 'UPDATE ordens_servico SET data_primeiro_pedido=NOW() WHERE id=?', osId);
+              }
+            }
+          }
+        }
+      } catch(eAuto) { /* não bloqueia a resposta por erro no avanço automático */ }
+    }
+
+    res.json({ mensagem: 'Peça atualizada' });
+  } catch(e) { res.status(500).json({ erro: e.message }); }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const db = getDB();
+    if (!await q(db, 'SELECT id FROM pecas_os WHERE id = ?', req.params.id)) return res.status(404).json({ erro: 'Peça não encontrada' });
+    await qr(db, 'DELETE FROM pecas_os WHERE id = ?', req.params.id);
+    res.json({ mensagem: 'Peça removida' });
+  } catch(e) { res.status(500).json({ erro: e.message }); }
+});
+
+module.exports = router;
