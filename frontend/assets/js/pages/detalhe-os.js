@@ -1,5 +1,11 @@
 const PageDetalheOS = {
-  os: null, fornecedores: [], editando: false, cfg: {},
+  os: null, fornecedores: [], editando: false, cfg: {}, _ocultarConcluidos: false,
+
+  toggleOcultarConcluidos() {
+    this._ocultarConcluidos = document.getElementById('toggle-ocultar-concluidos')?.checked || false;
+    const wrap = document.getElementById('tabela-pecas-wrap');
+    if (wrap) wrap.innerHTML = this.renderTabelaPecas();
+  },
   _transportesUsados: [],
 
   async render(params) {
@@ -86,9 +92,16 @@ const PageDetalheOS = {
       // ── Cards de PCs vinculados ──────────────────────────────────────────
       this.renderCardsPC() +
 
+      this.renderCardsPC() +
+
       '<div class="card mb-14"><div class="card-header"><div class="card-title">Peças</div>' +
-      '<button class="btn btn-orange btn-sm" onclick="PageDetalheOS.abrirModalPeca()">+ Adicionar peça</button></div>' +
-      this.renderTabelaPecas() + '</div>' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+      '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-2);user-select:none">' +
+      '<input type="checkbox" id="toggle-ocultar-concluidos" ' + (this._ocultarConcluidos ? 'checked' : '') + ' onchange="PageDetalheOS.toggleOcultarConcluidos()" style="width:14px;height:14px;cursor:pointer">' +
+      'Ocultar separados/entregues</label>' +
+      '<button class="btn btn-orange btn-sm" onclick="PageDetalheOS.abrirModalPeca()">+ Adicionar peça</button>' +
+      '</div></div>' +
+      '<div id="tabela-pecas-wrap">' + this.renderTabelaPecas() + '</div></div>' +
 
       '<div class="card mb-14"><div class="card-header"><div class="card-title">Histórico de status</div></div>' +
       this.renderTimeline() + '</div>' +
@@ -184,8 +197,18 @@ const PageDetalheOS = {
   renderTabelaPecas() {
     if (!this.os.pecas.length) return '<div class="empty-state"><p>Nenhuma peça. Clique em "+ Adicionar peça".</p></div>';
 
+    const STATUS_OCULTAR = ['Separado (Almoxarifado)', 'Entregue', 'Cancelado'];
+    const pecasFiltradas = this._ocultarConcluidos
+      ? this.os.pecas.filter(p => !STATUS_OCULTAR.includes(p.status_entrega))
+      : this.os.pecas;
+
+    if (this._ocultarConcluidos && !pecasFiltradas.length)
+      return '<div class="empty-state" style="padding:20px"><p>✅ Todas as peças já estão separadas ou entregues!</p></div>';
+
+    const ocultadas = this.os.pecas.length - pecasFiltradas.length;
+
     // Adiciona campo _markup calculado para ordenação
-    const pecasComMk = this.os.pecas.map(p => ({
+    const pecasComMk = pecasFiltradas.map(p => ({
       ...p,
       _markup: (p.preco_unitario && p.preco_fechado && p.preco_fechado > 0)
         ? p.preco_unitario / p.preco_fechado : null
@@ -266,9 +289,12 @@ const PageDetalheOS = {
         '</td></tr>';
     }).join('');
 
+    const infoOcultadas = ocultadas > 0
+      ? '<div style="font-size:11px;color:var(--text-4);padding:6px 12px;text-align:right">' + ocultadas + ' peça(s) oculta(s) (separadas/entregues)</div>'
+      : '';
     return '<div class="table-wrap"><table>' +
       '<thead><tr>' + headers + '<th style="width:36px"></th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table></div>';
+      '<tbody>' + rows + '</tbody></table></div>' + infoOcultadas;
   },
 
   toggleStatusMenu(e, id) {
