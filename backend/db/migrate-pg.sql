@@ -102,3 +102,6 @@ ALTER TABLE ordens_servico ADD COLUMN IF NOT EXISTS data_entrega_completa TIMEST
 ALTER TABLE pecas_os ADD COLUMN IF NOT EXISTS numero_pc TEXT;
 ALTER TABLE pecas_os ADD COLUMN IF NOT EXISTS referencia TEXT;
 ALTER TABLE pecas_os ADD COLUMN IF NOT EXISTS data_compra TEXT;
+
+-- Permite quantidades decimais (ex: 0,50 KG)
+ALTER TABLE pecas_os ALTER COLUMN quantidade TYPE NUMERIC(10,3);
