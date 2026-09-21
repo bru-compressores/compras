@@ -49,6 +49,7 @@ const Fmt = {
     return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   },
   statusOS(s) {
+    if (s === 'Aguardando Aprovação Técnica') return '<span class="badge" style="background:#f5f3ff;color:#7c3aed">🔒 Ag. Aprovação</span>';
     const map = {
       'Aberta': 'badge-aberta',
       'Aguardando peças': 'badge-aguardando',

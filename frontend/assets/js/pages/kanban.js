@@ -3,10 +3,11 @@ const PageKanban = {
   _dragging: null,
 
   colunas: [
-    { status: 'Aberta',           cor: '#9ca3af', bg: '#f9fafb', icon: '📋' },
-    { status: 'Aguardando peças', cor: '#d97706', bg: '#fffbeb', icon: '⏳' },
-    { status: 'Peças separadas',  cor: '#1a56db', bg: '#eff6ff', icon: '📦' },
-    { status: 'Concluída',        cor: '#059669', bg: '#f0fdf4', icon: '✅' },
+    { status: 'Aguardando Aprovação Técnica', cor: '#7c3aed', bg: '#f5f3ff', icon: '🔒' },
+    { status: 'Aberta',                       cor: '#9ca3af', bg: '#f9fafb', icon: '📋' },
+    { status: 'Aguardando peças',             cor: '#d97706', bg: '#fffbeb', icon: '⏳' },
+    { status: 'Peças separadas',              cor: '#1a56db', bg: '#eff6ff', icon: '📦' },
+    { status: 'Concluída',                    cor: '#059669', bg: '#f0fdf4', icon: '✅' },
   ],
 
   async render() {
@@ -16,7 +17,7 @@ const PageKanban = {
 
     document.getElementById('content').innerHTML =
       '<div style="font-size:12px;color:var(--text-3);margin-bottom:12px">Arraste os cards para mudar o status</div>' +
-      '<div id="kanban-board" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start"></div>';
+      '<div id="kanban-board" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:start"></div>';
 
     await this.carregar();
   },

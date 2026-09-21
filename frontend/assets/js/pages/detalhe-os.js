@@ -42,7 +42,8 @@ const PageDetalheOS = {
   // Badge colorido para status de entrega
   badgeStatus(s) {
     const map = {
-      'Em cotação':       { bg:'#ede9fe', cor:'#7c3aed', dot:'#7c3aed' },
+      'Em cotação':           { bg:'#ede9fe', cor:'#7c3aed', dot:'#7c3aed' },
+      'Bloqueado no Fornecedor': { bg:'#fff7ed', cor:'#c2410c', dot:'#f97316' },
       'Pendente':         { bg:'#f1f5f9', cor:'#64748b', dot:'#94a3b8' },
       'Pedido realizado': { bg:'#eff6ff', cor:'#1a56db', dot:'#1a56db' },
       'Em trânsito':      { bg:'#fffbeb', cor:'#d97706', dot:'#d97706' },
@@ -272,7 +273,7 @@ const PageDetalheOS = {
         this.badgeStatus(p.status_entrega) +
         '<span style="font-size:9px;color:var(--text-4);margin-left:3px">▼</span></div>' +
         '<div id="status-menu-' + p.id + '" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 20px rgba(0,0,0,.15);min-width:200px;padding:4px 0">' +
-        ['Aguardando Triagem','Separado (Almoxarifado)','Pendente','Em cotação','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(s =>
+        ['Aguardando Triagem','Separado (Almoxarifado)','Pendente','Em cotação','Bloqueado no Fornecedor','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(s =>
           '<div onclick="PageDetalheOS.atualizarStatusPeca(' + p.id + ',\'' + s + '\')" style="padding:7px 12px;cursor:pointer;font-size:12px" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
           this.badgeStatus(s) + '</div>'
         ).join('') +
@@ -776,7 +777,7 @@ const PageDetalheOS = {
       '<datalist id="transportes-list"></datalist>' +
       '<span class="form-hint">Digite ou escolha uma já usada</span></div>' +
       '<div class="form-group"><label class="form-label">Status de entrega</label><select id="peca-status" class="form-select">' +
-      '<option>Aguardando Triagem</option><option>Separado (Almoxarifado)</option><option>Pendente</option><option>Em cotação</option><option>Pedido realizado</option><option>Em trânsito</option><option>Entregue</option><option>Cancelado</option>' +
+      '<option>Aguardando Triagem</option><option>Separado (Almoxarifado)</option><option>Pendente</option><option>Em cotação</option><option>Bloqueado no Fornecedor</option><option>Pedido realizado</option><option>Em trânsito</option><option>Entregue</option><option>Cancelado</option>' +
       '</select></div>' +
       '<div class="form-group"><label class="form-label">Data prevista de entrega</label><input id="peca-data-prev" class="form-input" type="date"></div>' +
       '<div class="form-group"><label class="form-label">Data Compra (PC)</label><input id="peca-data-compra" class="form-input" type="date"></div>' +

@@ -316,3 +316,4 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after { content: ' ⇅'; }
   50% { opacity: .7; }
 }
 .badge-cotacao { background: #ede9fe; color: #7c3aed; }
+.badge-bloqueado { background: #fff7ed; color: #c2410c; }

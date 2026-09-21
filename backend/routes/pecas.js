@@ -73,7 +73,7 @@ router.put('/:id', async (req, res) => {
             let novoStatusOS = null;
             if (todasEntregues && os.status === 'Aguardando peças') {
               novoStatusOS = 'Peças separadas';
-            } else if (todasPedidas && os.status === 'Aberta') {
+            } else if (todasPedidas && os.status === 'Aberta' && os.status !== 'Aguardando Aprovação Técnica') {
               novoStatusOS = 'Aguardando peças';
             }
 
