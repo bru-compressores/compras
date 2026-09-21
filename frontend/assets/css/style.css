@@ -317,3 +317,4 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after { content: ' ⇅'; }
 }
 .badge-cotacao { background: #ede9fe; color: #7c3aed; }
 .badge-bloqueado { background: #fff7ed; color: #c2410c; }
+.badge-aprovacao { background: #f5f3ff; color: #7c3aed; }
