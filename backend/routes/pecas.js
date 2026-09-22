@@ -55,7 +55,7 @@ router.put('/:id', async (req, res) => {
         const pAtual = await q(db, 'SELECT * FROM pecas_os WHERE id = ?', req.params.id);
         const osId = pAtual?.os_id;
         if (osId) {
-          const os = await q(db, 'SELECT * FROM ordens_servico WHERE id = ?', osId);
+          let os = await q(db, 'SELECT * FROM ordens_servico WHERE id = ?', osId);
           const todasPecas = await qa(db, 'SELECT status_entrega FROM pecas_os WHERE os_id = ?', osId);
           const ativas = todasPecas.filter(p => !['Separado (Almoxarifado)', 'Cancelado', 'Aguardando Triagem'].includes(p.status_entrega));
 

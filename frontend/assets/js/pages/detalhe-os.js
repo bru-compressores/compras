@@ -1,6 +1,32 @@
 const PageDetalheOS = {
   os: null, fornecedores: [], editando: false, cfg: {}, _ocultarConcluidos: false,
 
+  toggleStatusDropdownModal(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('peca-status-menu');
+    const btn  = document.getElementById('peca-status-btn');
+    const isOpen = menu.style.display === 'block';
+    menu.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+      const rect = btn.getBoundingClientRect();
+      menu.style.left  = rect.left + 'px';
+      menu.style.top   = rect.bottom + 4 + 'px';
+      menu.style.width = rect.width + 'px';
+      setTimeout(() => {
+        document.addEventListener('click', function fechar() {
+          menu.style.display = 'none';
+          document.removeEventListener('click', fechar);
+        });
+      }, 10);
+    }
+  },
+
+  selecionarStatusModal(status) {
+    document.getElementById('peca-status').value = status;
+    document.getElementById('peca-status-label').innerHTML = this.badgeStatus(status);
+    document.getElementById('peca-status-menu').style.display = 'none';
+  },
+
   toggleOcultarConcluidos() {
     this._ocultarConcluidos = document.getElementById('toggle-ocultar-concluidos')?.checked || false;
     const wrap = document.getElementById('tabela-pecas-wrap');
@@ -376,7 +402,10 @@ const PageDetalheOS = {
       document.getElementById('peca-preco-cotado').value = peca.preco_cotado||'';
       document.getElementById('peca-preco-fechado').value= peca.preco_fechado||'';
       document.getElementById('peca-transporte').value   = peca.transporte||'';
-      document.getElementById('peca-status').value       = peca.status_entrega||'Pendente';
+      const statusPeca = peca.status_entrega||'Pendente';
+      document.getElementById('peca-status').value = statusPeca;
+      const labelEl = document.getElementById('peca-status-label');
+      if (labelEl) labelEl.innerHTML = this.badgeStatus(statusPeca);
       document.getElementById('peca-data-prev').value    = peca.data_entrega_prevista?.split('T')[0]||'';
       document.getElementById('peca-rastreio').value     = peca.numero_rastreio||'';
       document.getElementById('peca-obs').value          = peca.observacoes||'';
@@ -777,9 +806,19 @@ const PageDetalheOS = {
       '<input id="peca-transporte" class="form-input" list="transportes-list" placeholder="Ex: RODONAVES, SEDEX...">' +
       '<datalist id="transportes-list"></datalist>' +
       '<span class="form-hint">Digite ou escolha uma já usada</span></div>' +
-      '<div class="form-group"><label class="form-label">Status de entrega</label><select id="peca-status" class="form-select">' +
-      '<option>Aguardando Triagem</option><option>Separado (Almoxarifado)</option><option>Pendente</option><option>Em cotação</option><option>Bloqueado no Fornecedor</option><option>Aguardando Aprovação Técnica</option><option>Pedido realizado</option><option>Em trânsito</option><option>Entregue</option><option>Cancelado</option>' +
-      '</select></div>' +
+      '<div class="form-group form-full"><label class="form-label">Status de entrega</label>' +
+      '<input type="hidden" id="peca-status" value="Pendente">' +
+      '<div style="position:relative" id="status-modal-wrap">' +
+      '<div id="peca-status-btn" onclick="PageDetalheOS.toggleStatusDropdownModal(event)" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;background:var(--surface);min-height:38px">' +
+      '<span id="peca-status-label">' + this.badgeStatus('Pendente') + '</span>' +
+      '<span style="font-size:10px;color:var(--text-4);margin-left:8px">▼</span>' +
+      '</div>' +
+      '<div id="peca-status-menu" style="display:none;position:fixed;z-index:99999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 20px rgba(0,0,0,.15);padding:4px 0;min-width:260px">' +
+      ['Aguardando Triagem','Separado (Almoxarifado)','Pendente','Em cotação','Bloqueado no Fornecedor','Aguardando Aprovação Técnica','Pedido realizado','Em trânsito','Entregue','Cancelado'].map(st =>
+        '<div onclick="PageDetalheOS.selecionarStatusModal(\'' + st.replace(/'/g, "\\'") + '\')" style="padding:8px 14px;cursor:pointer;display:flex;align-items:center" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
+        this.badgeStatus(st) + '</div>'
+      ).join('') +
+      '</div></div></div>' +
       '<div class="form-group"><label class="form-label">Data prevista de entrega</label><input id="peca-data-prev" class="form-input" type="date"></div>' +
       '<div class="form-group"><label class="form-label">Data Compra (PC)</label><input id="peca-data-compra" class="form-input" type="date"></div>' +
       '<div class="form-group"><label class="form-label">Referência</label><input id="peca-referencia" class="form-input" placeholder="Ex: KX500-007"></div>' +

@@ -50,6 +50,7 @@ const Fmt = {
   },
   statusOS(s) {
     if (s === 'Aguardando Aprovação Técnica') return '<span class="badge" style="background:#f5f3ff;color:#7c3aed">🔒 Ag. Aprovação</span>';
+    if (s === 'Bloqueado no Fornecedor') return '<span class="badge" style="background:#fff7ed;color:#c2410c">🚫 Bloqueado Forn.</span>';
     const map = {
       'Aberta': 'badge-aberta',
       'Aguardando peças': 'badge-aguardando',

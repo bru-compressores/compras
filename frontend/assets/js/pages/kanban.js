@@ -4,6 +4,7 @@ const PageKanban = {
 
   colunas: [
     { status: 'Aguardando Aprovação Técnica', cor: '#7c3aed', bg: '#f5f3ff', icon: '🔒' },
+    { status: 'Bloqueado no Fornecedor',      cor: '#c2410c', bg: '#fff7ed', icon: '🚫' },
     { status: 'Aberta',                       cor: '#9ca3af', bg: '#f9fafb', icon: '📋' },
     { status: 'Aguardando peças',             cor: '#d97706', bg: '#fffbeb', icon: '⏳' },
     { status: 'Peças separadas',              cor: '#1a56db', bg: '#eff6ff', icon: '📦' },
@@ -17,7 +18,7 @@ const PageKanban = {
 
     document.getElementById('content').innerHTML =
       '<div style="font-size:12px;color:var(--text-3);margin-bottom:12px">Arraste os cards para mudar o status</div>' +
-      '<div id="kanban-board" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:start"></div>';
+      '<div id="kanban-board" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;align-items:start"></div>';
 
     await this.carregar();
   },
