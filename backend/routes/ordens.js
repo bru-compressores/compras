@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
     if (status)     { where.push('o.status = ?');     params.push(status); }
     if (prioridade) { where.push('o.prioridade = ?'); params.push(prioridade); }
     if (tipo)       { where.push('o.tipo = ?');       params.push(tipo); }
-    if (busca)      { where.push('(o.numero_os LIKE ? OR o.cliente LIKE ? OR o.equipamento LIKE ?)'); params.push(`%${busca}%`,`%${busca}%`,`%${busca}%`); }
+    if (busca)      { where.push('(o.numero_os ILIKE ? OR o.cliente ILIKE ? OR o.equipamento ILIKE ?)'); params.push(`%${busca}%`,`%${busca}%`,`%${busca}%`); }
     const wc = where.length ? 'WHERE ' + where.join(' AND ') : '';
     const offset = (parseInt(pagina)-1) * parseInt(limite);
     const totalRow = await q(db, `SELECT COUNT(*) as total FROM ordens_servico o ${wc}`, ...params);
