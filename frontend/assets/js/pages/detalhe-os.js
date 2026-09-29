@@ -1,6 +1,32 @@
 const PageDetalheOS = {
   os: null, fornecedores: [], editando: false, cfg: {}, _ocultarConcluidos: false,
 
+  toggleStatusOSDropdown(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('e-status-menu');
+    const btn  = document.getElementById('e-status-btn');
+    const isOpen = menu.style.display === 'block';
+    menu.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+      const rect = btn.getBoundingClientRect();
+      menu.style.left  = rect.left + 'px';
+      menu.style.top   = rect.bottom + 4 + 'px';
+      menu.style.width = rect.width + 'px';
+      setTimeout(() => {
+        document.addEventListener('click', function fechar() {
+          menu.style.display = 'none';
+          document.removeEventListener('click', fechar);
+        });
+      }, 10);
+    }
+  },
+
+  selecionarStatusOS(status) {
+    document.getElementById('e-status').value = status;
+    document.getElementById('e-status-label').innerHTML = Fmt.statusOS(status);
+    document.getElementById('e-status-menu').style.display = 'none';
+  },
+
   toggleStatusDropdownModal(event) {
     event.stopPropagation();
     const menu = document.getElementById('peca-status-menu');
@@ -167,7 +193,19 @@ const PageDetalheOS = {
       '<div class="form-group" style="grid-column:span 2"><label class="form-label required">Cliente</label><input id="e-cliente" class="form-input" value="' + os.cliente + '"></div>' +
       '<div class="form-group" style="grid-column:1/-1"><label class="form-label">Equipamento</label><input id="e-equipamento" class="form-input" value="' + os.equipamento + '"></div>' +
       '<div class="form-group"><label class="form-label">Tipo</label><select id="e-tipo" class="form-select"><option value="OS"' + ((os.tipo||'OS')==='OS'?' selected':'') + '>Ordem de Serviço</option><option value="Pedido"' + (os.tipo==='Pedido'?' selected':'') + '>Pedido de Peças</option></select></div>' +
-      '<div class="form-group"><label class="form-label">Status</label><select id="e-status" class="form-select">' + sel(os.status,['Aguardando Aprovação Técnica','Bloqueado no Fornecedor','Aberta','Aguardando peças','Peças separadas','Concluída','Cancelada']) + '</select></div>' +
+      '<div class="form-group"><label class="form-label">Status</label>' +
+      '<input type="hidden" id="e-status" value="' + os.status + '">' +
+      '<div style="position:relative">' +
+      '<div id="e-status-btn" onclick="PageDetalheOS.toggleStatusOSDropdown(event)" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;background:var(--surface);min-height:38px">' +
+      '<span id="e-status-label">' + Fmt.statusOS(os.status) + '</span>' +
+      '<span style="font-size:10px;color:var(--text-4);margin-left:8px">▼</span>' +
+      '</div>' +
+      '<div id="e-status-menu" style="display:none;position:fixed;z-index:99999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 20px rgba(0,0,0,.15);padding:4px 0;min-width:260px">' +
+      ['Aguardando Aprovação Técnica','Bloqueado no Fornecedor','Aberta','Aguardando peças','Peças separadas','Concluída','Cancelada'].map(st =>
+        '<div onclick="PageDetalheOS.selecionarStatusOS(\'' + st.replace(/'/g,"\\'") + '\')" style="padding:8px 14px;cursor:pointer;display:flex;align-items:center" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
+        Fmt.statusOS(st) + '</div>'
+      ).join('') +
+      '</div></div></div>' +
       '<div class="form-group"><label class="form-label">Prioridade</label><select id="e-prioridade" class="form-select">' + sel(os.prioridade,['Alta','Média','Baixa']) + '</select></div>' +
       '<div class="form-group"><label class="form-label">Abertura</label><input id="e-abertura" class="form-input" type="date" value="' + (os.data_abertura?.split('T')[0]||'') + '"></div>' +
       '<div class="form-group"><label class="form-label">Previsão</label><input id="e-conclusao" class="form-input" type="date" value="' + (os.data_conclusao_estimada?.split('T')[0]||'') + '"></div>' +
