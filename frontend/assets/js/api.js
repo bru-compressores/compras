@@ -49,15 +49,18 @@ const Fmt = {
     return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   },
   statusOS(s) {
-    if (s === 'Aguardando Aprovação Técnica') return '<span class="badge" style="background:#f5f3ff;color:#7c3aed">🔒 Ag. Aprovação</span>';
-    if (s === 'Bloqueado no Fornecedor') return '<span class="badge" style="background:#fff7ed;color:#c2410c">🚫 Bloqueado Forn.</span>';
     const map = {
-      'Aberta': 'badge-aberta',
-      'Aguardando peças': 'badge-aguardando',
-      'Peças separadas': 'badge-separadas',
-      'Concluída': 'badge-concluida'
+      'Aguardando Aprovação Técnica': { bg:'#f5f3ff', cor:'#7c3aed', dot:'#7c3aed', icon:'🔒', label:'Ag. Aprovação Técnica' },
+      'Bloqueado no Fornecedor':      { bg:'#fff7ed', cor:'#c2410c', dot:'#f97316', icon:'🚫', label:'Bloqueado no Fornecedor' },
+      'Aberta':                       { bg:'#f1f5f9', cor:'#475569', dot:'#94a3b8', icon:'📋', label:'Aberta' },
+      'Aguardando peças':             { bg:'#fffbeb', cor:'#d97706', dot:'#f59e0b', icon:'⏳', label:'Aguardando peças' },
+      'Peças separadas':              { bg:'#eff6ff', cor:'#1a56db', dot:'#3b82f6', icon:'📦', label:'Peças separadas' },
+      'Concluída':                    { bg:'#f0fdf4', cor:'#16a34a', dot:'#22c55e', icon:'✅', label:'Concluída' },
+      'Cancelada':                    { bg:'#fef2f2', cor:'#dc2626', dot:'#ef4444', icon:'❌', label:'Cancelada' },
     };
-    return `<span class="badge ${map[s] || 'badge-aberta'}">${s}</span>`;
+    const c = map[s] || { bg:'#f1f5f9', cor:'#475569', dot:'#94a3b8', icon:'', label: s };
+    return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${c.bg};color:${c.cor};white-space:nowrap">` +
+      `<span style="font-size:9px">${c.icon}</span> ${c.label}</span>`;
   },
   prioridade(p) {
     return p === 'Alta'
