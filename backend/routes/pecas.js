@@ -59,7 +59,28 @@ router.put('/:id', async (req, res) => {
           const todasPecas = await qa(db, 'SELECT status_entrega FROM pecas_os WHERE os_id = ?', osId);
           const ativas = todasPecas.filter(p => !['Separado (Almoxarifado)', 'Cancelado', 'Aguardando Triagem'].includes(p.status_entrega));
 
-          // Só avança se tiver peças ativas para comprar
+          // ── Status automático por peças especiais ─────────────────────────
+          const temAgTecnica = todasPecas.some(p => p.status_entrega === 'Aguardando Aprovação Técnica');
+          const temBloqueado = todasPecas.some(p => p.status_entrega === 'Bloqueado no Fornecedor');
+
+          let novoStatusEspecial = null;
+          if (temAgTecnica && os.status !== 'Aguardando Aprovação Técnica') {
+            novoStatusEspecial = 'Aguardando Aprovação Técnica'; // prioridade máxima
+          } else if (!temAgTecnica && temBloqueado && os.status !== 'Bloqueado no Fornecedor') {
+            novoStatusEspecial = 'Bloqueado no Fornecedor';
+          } else if (!temAgTecnica && !temBloqueado &&
+            ['Aguardando Aprovação Técnica', 'Bloqueado no Fornecedor'].includes(os.status)) {
+            novoStatusEspecial = 'Aberta'; // todas resolvidas → volta para Aberta
+          }
+
+          if (novoStatusEspecial) {
+            await qr(db, 'UPDATE ordens_servico SET status=?, atualizado_em=NOW() WHERE id=?', novoStatusEspecial, osId);
+            await qr(db, 'INSERT INTO historico_status (os_id,status_anterior,status_novo,observacao,usuario_id) VALUES (?,?,?,?,?)',
+              osId, os.status, novoStatusEspecial, 'Status automático baseado nas peças', req.usuario?.id || null);
+            os = await q(db, 'SELECT * FROM ordens_servico WHERE id = ?', osId); // recarrega
+          }
+
+          // ── Avanço normal do fluxo ────────────────────────────────────────
           if (ativas.length === 0) {
             // Nenhuma peça para comprar — não avança automaticamente
           } else {
@@ -73,12 +94,11 @@ router.put('/:id', async (req, res) => {
             let novoStatusOS = null;
             if (todasEntregues && os.status === 'Aguardando peças') {
               novoStatusOS = 'Peças separadas';
-            } else if (todasPedidas && os.status === 'Aberta' && os.status !== 'Aguardando Aprovação Técnica') {
+            } else if (todasPedidas && os.status === 'Aberta') {
               novoStatusOS = 'Aguardando peças';
             }
 
             if (novoStatusOS) {
-              // Captura datas de lead time automaticamente
               let campoData = '';
               if (novoStatusOS === 'Aguardando peças') campoData = ', data_todas_pedidas=NOW()';
               if (novoStatusOS === 'Peças separadas')  campoData = ', data_entrega_completa=NOW()';
