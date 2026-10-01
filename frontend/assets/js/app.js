@@ -15,6 +15,7 @@ const App = {
     importar:      'BRU Compressores / Importar',
     backup:        'BRU Compressores / Backup',
     configuracoes: 'BRU Compressores / Configurações',
+    docs:          'BRU Compressores / Ajuda e Documentação',
   },
   titles: {
     dashboard:     'Dashboard',
@@ -29,6 +30,7 @@ const App = {
     importar:      'Importar',
     backup:        'Backup',
     configuracoes: 'Configurações',
+    docs:          'Ajuda / Documentação',
   },
 
   getPages() {
@@ -45,6 +47,7 @@ const App = {
       importar:      PageImportar,
       backup:        PageBackup,
       configuracoes: PageConfiguracoes,
+      docs:          PageDocs,
     };
   },
 
